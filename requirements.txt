@@ -1,0 +1,29 @@
+# ============================================================
+# MAX AI — Required Dependencies
+# Install all at once:
+#   pip install -r requirements.txt
+# ============================================================
+
+# --- AI Providers ---
+openai>=1.0.0              # OpenAI / OpenRouter / NVIDIA / DeepSeek / MiniMax
+anthropic>=0.30.0          # Claude
+google-genai>=1.0.0        # Gemini
+mistralai>=1.0.0           # Mistral AI
+cohere>=5.0.0              # Cohere
+
+# --- Text-to-Speech ---
+pyttsx3>=2.90              # Local TTS (fallback)
+elevenlabs>=2.0.0          # ElevenLabs TTS
+edge-tts>=7.0.0            # Microsoft Edge TTS (free, no key)
+
+# --- Vision / Camera ---
+opencv-python>=4.8.0       # Camera, image processing
+numpy>=1.24.0              # Array operations
+PyAutoGUI>=0.9.50          # Screenshot capture
+pytesseract>=0.3.10        # OCR (text extraction)
+pyzbar>=0.1.9              # QR / barcode scanning
+ultralytics>=8.0.0         # YOLO object detection
+
+# --- System ---
+psutil>=5.9.0              # CPU / memory info
+requests>=2.31.0           # HTTP requests
