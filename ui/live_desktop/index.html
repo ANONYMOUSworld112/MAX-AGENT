@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MAX OS — Real-Time Live Desktop & Autonomous Computer-Use Viewer</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="dark-theme">
+    <div class="app-container">
+        <!-- Top Control Bar -->
+        <header class="top-nav">
+            <div class="brand-badge">
+                <div class="status-dot live-pulse"></div>
+                <span class="brand-title">MAX OS</span>
+                <span class="mode-badge" id="modeBadge">CONTROL MODE</span>
+            </div>
+
+            <!-- Monitor Selector Tabs -->
+            <div class="monitor-selector" id="monitorTabs">
+                <button class="mon-btn active" data-mon="0">Primary Monitor</button>
+                <button class="mon-btn" data-mon="1">Monitor 2</button>
+            </div>
+
+            <!-- Header Controls -->
+            <div class="header-actions">
+                <div class="owner-pill" id="inputOwnerPill">
+                    <span class="owner-label">INPUT OWNER:</span>
+                    <span class="owner-value" id="inputOwnerValue">MAX</span>
+                </div>
+                <button class="kill-btn" id="stopMaxBtn" title="Instant Emergency Revocation">
+                    <span class="stop-icon">🛑</span> STOP MAX
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Workspace -->
+        <main class="main-layout">
+            <!-- Left: Real-Time Live Desktop Viewport -->
+            <section class="desktop-viewport-container">
+                <!-- Interactive Command & Test Console -->
+                <div class="command-console-bar">
+                    <div class="quick-actions-bar">
+                        <span class="quick-title">QUICK TEST AUTOMATIONS:</span>
+                        <button class="quick-chip" id="quickNotepadBtn">📝 Open Notepad & Write Note</button>
+                        <button class="quick-chip" id="quickInstagramBtn">🌐 Open Brave & Instagram</button>
+                        <button class="quick-chip" id="quickWorkshopBtn">🔬 Workshop Diagnostics</button>
+                        <button class="quick-chip" id="quickDoctorBtn">🏥 System Health Doctor</button>
+                    </div>
+                    <div class="cmd-input-row">
+                        <input type="text" id="cmdInput" class="cmd-input" placeholder="Type natural language command or test instruction (e.g. open notepad and write about yourself)..." value="open notepad and write about yourself in E drive">
+                        <button id="execCmdBtn" class="exec-btn">⚡ EXECUTE DIRECTLY</button>
+                    </div>
+                </div>
+
+                <div class="viewport-header">
+                    <div class="feed-indicator">
+                        <span class="rec-dot"></span> LIVE MIRROR (<span id="resIndicator">1920x1080</span>)
+                    </div>
+                    <div class="stream-stats">
+                        <span id="fpsCounter">25 FPS</span> • <span id="latencyMetric">4ms latency</span>
+                    </div>
+                </div>
+
+                <div class="screen-canvas-wrapper" id="canvasWrapper">
+                    <!-- Real Windows Screen MJPEG / WebSocket Frame Stream -->
+                    <img id="liveScreenImg" src="/desktop/live/mjpeg" alt="Live Windows Desktop Stream" class="live-screen-feed">
+                    
+                    <!-- Dynamic Live Hardware Cursor Overlay -->
+                    <div class="live-cursor-pin" id="liveCursorPin">
+                        <div class="cursor-pointer"></div>
+                        <div class="cursor-label">MAX</div>
+                    </div>
+
+                    <!-- Action Visualization HUD Overlay -->
+                    <div class="action-hud" id="actionHud">
+                        <div class="hud-icon">⚡</div>
+                        <div class="hud-text" id="hudActionText">Observing Windows desktop state...</div>
+                    </div>
+                </div>
+
+                <!-- Bottom Status Bar -->
+                <div class="viewport-footer">
+                    <div class="loop-stage">
+                        <span class="stage-tag active">OBSERVE</span> →
+                        <span class="stage-tag active">PLAN</span> →
+                        <span class="stage-tag active">ACT</span> →
+                        <span class="stage-tag active">VERIFY</span> →
+                        <span class="stage-tag">ADAPT</span>
+                    </div>
+                    <div class="connection-status" id="connStatus">● CONNECTED (winsta0\default)</div>
+                </div>
+            </section>
+
+            <!-- Right: Real-Time State & Telemetry Panel -->
+            <aside class="state-sidebar">
+                <div class="panel-header">
+                    <h3>LIVE STATE & REASONING</h3>
+                </div>
+
+                <!-- Current Task Card -->
+                <div class="state-card primary-card">
+                    <div class="card-label">CURRENT TASK</div>
+                    <div class="card-value highlight-text" id="telemetryTask">Starting college day workspace...</div>
+                </div>
+
+                <!-- Active Application & Window -->
+                <div class="state-grid">
+                    <div class="state-card">
+                        <div class="card-label">ACTIVE APPLICATION</div>
+                        <div class="card-value" id="telemetryApp">Brave Browser</div>
+                    </div>
+                    <div class="state-card">
+                        <div class="card-label">VERIFICATION</div>
+                        <div class="card-value badge-success" id="telemetryVerif">SUCCESS</div>
+                    </div>
+                </div>
+
+                <!-- Active Window Title -->
+                <div class="state-card">
+                    <div class="card-label">FOREGROUND WINDOW</div>
+                    <div class="card-value monospace-text text-truncate" id="telemetryWindow">Google Search — Brave</div>
+                </div>
+
+                <!-- Current Action & Next Intended Action -->
+                <div class="state-card">
+                    <div class="card-label">CURRENT ACTION</div>
+                    <div class="card-value action-value" id="telemetryAction">Clicking search result #1</div>
+                </div>
+
+                <div class="state-card">
+                    <div class="card-label">NEXT INTENDED STEP</div>
+                    <div class="card-value subtext" id="telemetryNextStep">Verify page DOM hierarchy and extract syllabus notes</div>
+                </div>
+
+                <!-- Mode Control -->
+                <div class="state-card mode-selector-card">
+                    <div class="card-label">CONTROL MODE</div>
+                    <div class="mode-btn-group">
+                        <button class="mode-toggle active" data-mode="CONTROL">CONTROL</button>
+                        <button class="mode-toggle" data-mode="OBSERVE">OBSERVE</button>
+                        <button class="mode-toggle" data-mode="COLLAB">COLLAB</button>
+                    </div>
+                </div>
+
+                <!-- Live Agent Trace Logs -->
+                <div class="state-card trace-log-card">
+                    <div class="card-label">REAL-TIME EXECUTION LOG</div>
+                    <div class="log-stream" id="logStream">
+                        <div class="log-line"><span class="time">[10:48:01]</span> Attached to winsta0\default session</div>
+                        <div class="log-line"><span class="time">[10:48:02]</span> Initialized UI Automation COM walker</div>
+                        <div class="log-line"><span class="time">[10:48:03]</span> InputArbiter granted lease to 'ComputerUseAgent'</div>
+                        <div class="log-line success"><span class="time">[10:48:04]</span> Verification: Target window in foreground</div>
+                    </div>
+                </div>
+            </aside>
+        </main>
+    </div>
+
+    <script src="viewer.js"></script>
+</body>
+</html>

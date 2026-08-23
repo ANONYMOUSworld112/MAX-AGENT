@@ -1,0 +1,42 @@
+# MAX OS — Python Dependencies
+# Pinned versions for reproducibility. No dependency without a decisions_log entry.
+
+# ── Core Runtime ──────────────────────────────────
+python-dotenv>=1.0.0
+pyyaml>=6.0.1
+rich>=13.7.0                    # CLI output formatting
+click>=8.1.7                    # CLI framework
+
+# ── Database ──────────────────────────────────────
+# SQLite is bundled with Python — no package needed
+
+# ── Security / Secrets ────────────────────────────
+keyring>=25.0.0                 # OS keychain access
+cryptography>=42.0.0            # AES-256 encrypted vault fallback
+
+# ── LLM Integration ──────────────────────────────
+anthropic>=0.34.0               # Claude API client
+
+# ── System Control & Automation (Files / Computer / Browser) ───────
+psutil>=5.9.8                   # Cross-platform process/system info
+pyautogui>=0.9.54               # Keyboard/mouse control
+pyperclip>=1.8.2                # Clipboard operations
+pygetwindow>=0.0.9              # Window management (Windows)
+Send2Trash>=1.8.0               # Recoverable filesystem deletion
+watchdog>=4.0.0                 # Filesystem monitoring
+mss>=9.0.0                      # Screen capture
+Pillow>=10.0.0                  # Image processing
+pytesseract>=0.3.10             # OCR fallback
+pexpect>=4.9.0                  # Interactive terminal sessions
+playwright>=1.40.0              # Deterministic browser automation
+browser-use>=0.1.0              # LLM-driven browser agent loop
+
+# ── Embeddings (Notes Agent) ─────────────────────
+sentence-transformers>=3.0.0    # Local embedding model
+numpy>=1.26.0                   # Vector operations
+
+# ── Testing ───────────────────────────────────────
+pytest>=8.0.0
+pytest-asyncio>=0.23.0
+pytest-cov>=5.0.0
+

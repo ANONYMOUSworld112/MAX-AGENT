@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>MAX OS — Holographic J.A.R.V.I.S. Command HUD</title>
+    <style>
+        :root {
+            --primary: #00f0ff;
+            --primary-glow: rgba(0, 240, 255, 0.4);
+            --bg: #030712;
+            --panel: rgba(15, 23, 42, 0.75);
+            --border: rgba(0, 240, 255, 0.3);
+            --success: #10b981;
+            --warning: #f59e0b;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+        body {
+            background: var(--bg);
+            color: #e2e8f0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 50% 30%, rgba(0, 240, 255, 0.08) 0%, transparent 70%),
+                linear-gradient(rgba(0, 240, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 240, 255, 0.03) 1px, transparent 1px);
+            background-size: 100% 100%, 40px 40px, 40px 40px;
+        }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem 3rem;
+            border-bottom: 1px solid var(--border);
+            backdrop-filter: blur(12px);
+            background: rgba(3, 7, 18, 0.8);
+        }
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 800;
+            letter-spacing: 3px;
+            color: var(--primary);
+            text-shadow: 0 0 15px var(--primary-glow);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .status-pill {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--success);
+            padding: 6px 16px;
+            border-radius: 999px;
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            font-size: 0.85rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); box-shadow: 0 0 10px var(--success); animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+        main {
+            flex: 1;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+            gap: 1.5rem;
+            padding: 2.5rem 3rem;
+        }
+        .card {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            backdrop-filter: blur(16px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 2px;
+            background: linear-gradient(90deg, transparent, var(--primary), transparent);
+        }
+        .card:hover {
+            border-color: var(--primary);
+            box-shadow: 0 0 25px var(--primary-glow);
+            transform: translateY(-2px);
+        }
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.25rem;
+        }
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .stat-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        .stat-box {
+            background: rgba(0, 240, 255, 0.05);
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(0, 240, 255, 0.1);
+        }
+        .stat-label { font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; }
+        .stat-value { font-size: 1.25rem; font-weight: 700; color: var(--primary); margin-top: 4px; }
+        .log-list {
+            list-style: none;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+        .log-item {
+            padding: 6px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            justify-content: space-between;
+        }
+        .log-item span:first-child { color: #cbd5e1; }
+        .log-item span:last-child { color: var(--primary); font-weight: 600; }
+        .hero-arc {
+            grid-column: 1 / -1;
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            padding: 2rem;
+            background: linear-gradient(135deg, rgba(0, 240, 255, 0.1), rgba(15, 23, 42, 0.8));
+        }
+        .arc-ring {
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
+            border: 4px dashed var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            animation: rotate 20s linear infinite;
+            box-shadow: 0 0 30px var(--primary-glow), inset 0 0 30px var(--primary-glow);
+        }
+        @keyframes rotate { 100% { transform: rotate(360deg); } }
+        .arc-center {
+            font-size: 1.8rem;
+            font-weight: 900;
+            color: #fff;
+            text-shadow: 0 0 20px var(--primary);
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">
+            <span>⚛️</span> MAX OS • J.A.R.V.I.S. COMMAND PLATFORM
+        </div>
+        <div class="status-pill">
+            <div class="dot"></div>
+            ALL SYSTEMS ARMED & OPERATIONAL
+        </div>
+    </header>
+
+    <main>
+        <div class="card hero-arc">
+            <div>
+                <h2 style="font-size: 1.8rem; color: #fff; margin-bottom: 8px;">Autonomous AI Operating System</h2>
+                <p style="color: #94a3b8; max-width: 500px;">Zero-Trust execution core uniting Desktop Input Control, Mobile ADB, Universal IoT, and Cybersecurity Recon.</p>
+            </div>
+            <div class="arc-ring">
+                <div class="arc-center">100%</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">🛡️ Security & Zero-Trust Core</div>
+            </div>
+            <div class="stat-grid">
+                <div class="stat-box">
+                    <div class="stat-label">Kill Switch</div>
+                    <div class="stat-value" style="color: var(--success);">ARMED</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Encrypted Vault</div>
+                    <div class="stat-value">KEYRING</div>
+                </div>
+            </div>
+            <ul class="log-list" style="margin-top: 1rem;">
+                <li class="log-item"><span>Data Boundary Sanitizer</span><span>ACTIVE</span></li>
+                <li class="log-item"><span>Human Approval Gate (DA-7)</span><span>ENFORCED</span></li>
+                <li class="log-item"><span>SAST Vulnerability Audit</span><span>0 LEAKS</span></li>
+            </ul>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">🏠 Universal IoT & Hardware</div>
+            </div>
+            <div class="stat-grid">
+                <div class="stat-box">
+                    <div class="stat-label">Living Room Lights</div>
+                    <div class="stat-value">CYAN (100%)</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Central Thermostat</div>
+                    <div class="stat-value">21.5 °C</div>
+                </div>
+            </div>
+            <ul class="log-list" style="margin-top: 1rem;">
+                <li class="log-item"><span>Smart Lock Front Door</span><span>LOCKED (Matter)</span></li>
+                <li class="log-item"><span>Living Room OLED TV</span><span>ONLINE (ADB)</span></li>
+                <li class="log-item"><span>ESP32 Environmental Station</span><span>COM4 ACTIVE</span></li>
+            </ul>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">📱 Mobile Bridge (Android ADB)</div>
+            </div>
+            <div class="stat-grid">
+                <div class="stat-box">
+                    <div class="stat-label">Connected Phone</div>
+                    <div class="stat-value">Pixel 8 Pro</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Battery Level</div>
+                    <div class="stat-value" style="color: var(--success);">92%</div>
+                </div>
+            </div>
+            <ul class="log-list" style="margin-top: 1rem;">
+                <li class="log-item"><span>Wireless Debugging</span><span>CONNECTED</span></li>
+                <li class="log-item"><span>Screen Mirroring</span><span>STANDBY</span></li>
+                <li class="log-item"><span>WhatsApp Fast-Bridge</span><span>READY</span></li>
+            </ul>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">🧠 Cognitive Memory & Research</div>
+            </div>
+            <div class="stat-grid">
+                <div class="stat-box">
+                    <div class="stat-label">5-Layer Heap</div>
+                    <div class="stat-value">SYNCED</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Active Models</div>
+                    <div class="stat-value">HYBRID</div>
+                </div>
+            </div>
+            <ul class="log-list" style="margin-top: 1rem;">
+                <li class="log-item"><span>WebSearch Real-Time Quota</span><span>1 / 100</span></li>
+                <li class="log-item"><span>Synthesis Citations</span><span>VERIFIED</span></li>
+                <li class="log-item"><span>Bayesian Behavior Pattern</span><span>LEARNING</span></li>
+            </ul>
+        </div>
+    </main>
+</body>
+</html>

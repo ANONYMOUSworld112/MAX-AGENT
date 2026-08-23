@@ -1,0 +1,67 @@
+# MAX OS — Build Decisions & Architecture Audit Log
+
+## Phase 0: Audit & Baseline Verification
+- **Decision [AUDIT-001]**: Reused existing production-grade modules `core/kill_switch.py`, `core/permissions.py`, `core/watchdog.py`, `core/snapshot.py`, `core/reconciliation.py`, and `core/win32_interactive_session.py`.
+- **Decision [AUDIT-002]**: Fixed hardcoded workspace path in `core/ephemeral_batch_runner.py` from `'C:\Users\...'` to dynamic `Path(__file__).resolve().parent.parent`. Baseline suite reached 133/133 passing tests (100%).
+
+## Phase 1: Perception Subsystem (ComputerState)
+- **Decision [PERC-001]**: Windows UI Automation implemented via `comtypes.client.GetModule('UIAutomationCore.dll')` (`IUIAutomation`) for ground-truth structural element inspection and bounding box extraction.
+- **Decision [PERC-002]**: Implemented 4-layer fallback perception hierarchy (Accessibility Tree -> In-Browser DOM -> Win32 GDI/PrintWindow -> Visual Element Gradient Detection).
+- **Decision [PERC-003]**: `ScreenCaptureEngine` and `ComputerStateBuilder` handle DPI scaling and provide virtual canvas / GDI BitBlt fallbacks in headless/background execution sessions.
+- **Verification Gate**: 20/20 test scenarios passed in `tests/test_phase1_computer_state_perception.py`.
+
+## Phase 2: Controllers & Input Arbitration
+- **Decision [CTRL-001]**: `InputArbiter` enforces exclusive single-stream mouse, keyboard, and active-window focus ownership with unconditional instant revocation upon kill-switch preemption.
+- **Decision [CTRL-002]**: `MouseController` and `KeyboardController` strictly resolve dynamic semantic element descriptors (`ElementDescriptor.center`), completely eliminating fixed-coordinate reliance. Focus-and-type verifies active focused element before typing.
+- **Verification Gate**: 12/12 test scenarios passed in `tests/test_phase2_controllers_arbitration.py`.
+
+## Phase 3: Verification Engine
+- **Decision [VERIF-001]**: Deterministic 3-outcome invariant implemented (`SUCCESS`, `FAILURE`, `UNKNOWN`). Absence of an error is strictly never treated as evidence of success.
+- **Decision [VERIF-002]**: Specialized verifiers built for Windows & processes, browser URLs, files & hashes, text inputs, and element state diffs.
+- **Verification Gate**: 13/13 test scenarios passed in `tests/test_phase3_verification_engine.py` with 0.0% false-success classifications on the immunity benchmark.
+
+## Phase 4: Security Gate & Recovery Engine
+- **Decision [SEC-001]**: Hardcoded static risk classification (Tier 0: Auto, Tier 1: Confirm once per task, Tier 2: Confirm every single instance with single-use tokens). Planning LLM framing cannot downgrade risk tiers.
+- **Decision [SEC-002]**: Environmental prompt injection quarantine filter flags and isolates instruction-shaped text in web/file/OCR data.
+- **Decision [REC-001]**: 13-class failure taxonomy with progressive 8-step recovery strategy pipeline (`REOBSERVE` -> `REFRESH_STATE` -> `SEARCH_AGAIN` -> `ALT_INTERACTION_METHOD` -> `RETRY` -> `CHANGE_STRATEGY` -> `REPLAN` -> `ESCALATE_USER`) with a default 3-retry cap.
+- **Verification Gate**: 9/9 red-team test scenarios passed in `tests/test_phase4_security_recovery.py`.
+
+## Phase 5: Low-Risk Autonomous Loop (Tier 0)
+- **Decision [LOOP-001]**: `CommandModel` synthesizes structured semantic `TaskPlan` of `ActionObject` records.
+- **Decision [LOOP-002]**: `UniversalExecutionLoop` enforces reactive single-step execution (`OBSERVE -> UNDERSTAND -> PLAN -> ACT -> VERIFY -> RECOVER`) ensuring MAX never executes multi-step plans blind.
+- **Decision [AGENT-001]**: `DesktopAgent`, `BrowserAgent`, and `ComputerUseAgent` operate Tier 0 workflows autonomously.
+- **Verification Gate**: 5/5 test scenarios passed in `tests/test_phase5_low_risk_loop.py` covering 50+ diverse task syntheses.
+
+## Phase 6: Tier 1 Actions & Application Adapters
+- **Decision [APP-001]**: Built `BaseApplicationAdapter` interface (`DISCOVER -> CONNECT -> OBSERVE -> INTERACT -> VERIFY`) and specialized adapters for VS Code, Web Browsers, Windows File Explorer, Windows Terminal / PowerShell, and Office text editors.
+- **Decision [APP-002]**: Built Unknown Application Protocol (Section 15) enabling autonomous probing and Task Memory caching for previously unseen software.
+- **Verification Gate**: 8/8 test scenarios passed in `tests/test_phase6_tier1_adapters.py`.
+
+## Phase 7: Tier 2 Actions & Transaction Rollback
+- **Decision [TX-001]**: `TransactionManager` encapsulates destructive/sensitive operations in an atomic lifecycle (`START TRANSACTION -> SNAPSHOT -> CONFIRM -> EXECUTE -> VERIFY -> COMMIT or ROLLBACK`).
+- **Decision [TX-002]**: Guaranteed zero residual partial files upon induced execution failures, verification contradictions, or emergency stop triggers.
+- **Verification Gate**: 4/4 test scenarios passed in `tests/test_phase7_tier2_transactions.py`.
+
+## Phase 8: Specialized Agents
+- **Decision [SPEC-001]**: `ResearchAgent` conducts multi-source web research with citation deduplication.
+- **Decision [SPEC-002]**: `FileAgent` discovers files via glob patterns, computes SHA-256 hashes, and conducts transactional moves.
+- **Decision [SPEC-003]**: `TerminalAgent` executes PowerShell commands with exit-code verification and timeout handling.
+- **Verification Gate**: 6/6 test scenarios passed in `tests/test_phase8_specialized_agents.py`.
+
+## Phase 9: Multi-Agent Orchestration
+- **Decision [ORCH-001]**: `MasterOrchestrator` deconstructs compound multi-domain user goals into sub-tasks, coordinates sequential and parallel subagent handoffs with Task Memory context forwarding, single Input Arbiter stream serialization, and non-overlapping Single TTS Queue narration.
+- **Verification Gate**: 3/3 test scenarios passed in `tests/test_phase9_multi_agent_orchestration.py`.
+
+## Phase 10: Production Hardening & Full Battery Validation
+- **Decision [HARDEN-001]**: Benchmarked Security Gate latency (< 1ms avg vs 10ms budget), Verification Engine latency (< 5ms avg vs 1000ms budget), and baseline process memory footprint (< 300MB vs 800MB budget).
+- **Verification Gate**: 3/3 benchmark scenarios passed in `tests/test_phase10_production_hardening.py`.
+
+## Phase 11: Real-World Hardcore Scenarios & 10-Domain Battery
+- **Decision [REALWORLD-001]**: Built `core/scenarios/day_to_day_scenarios.py` and `core/scenarios/comprehensive_scenarios.py` covering all 10 domains (Computer & Windows, Browser & Web, Coding, Files, Email, College, Troubleshooting, Multi-Agent Tasks, High-Autonomy, and the Extreme Master Pipeline).
+- **Verification Gate**: 20/20 scenarios passed in `tests/test_hardcore_day_to_day_scenarios.py` and 10/10 domains passed in `tests/test_all_hardcore_domains.py`.
+
+## Phase 12: Real-Time Live Desktop Mirroring & Control Pipeline
+- **Decision [LIVESTREAM-001]**: Built `ContinuousDesktopStreamer` (`core/perception/live_stream.py`) providing continuous 20-30 FPS frame capture directly from `winsta0\default`, hardware cursor tracking, and Pillow-accelerated `FrameDifferencer` (< 1ms).
+- **Decision [LIVESTREAM-002]**: Built dedicated web viewer UI in `ui/live_desktop/` (`index.html`, `style.css`, `viewer.js`) providing live screen feed, live cursor tracking, Action HUD overlay, Real-Time State Panel, mode switches (`OBSERVE`, `CONTROL`, `COLLAB`), and instant `STOP MAX` emergency button.
+- **Decision [LIVESTREAM-003]**: Exposed `/desktop/live/mjpeg`, `/desktop/live/frame`, `/desktop/live/metadata`, `/desktop/live/monitors`, and `/ws/desktop/stream` endpoints in FastAPI.
+- **Verification Gate**: 3/3 streaming tests passed in `tests/test_live_desktop_stream.py`. Full repository reached 249/249 passing tests (100%).

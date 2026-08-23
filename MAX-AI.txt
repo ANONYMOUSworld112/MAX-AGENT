@@ -1,0 +1,804 @@
+# MAX — Ultimate Autonomous AI System
+## Master System Design Prompt
+
+You are the Chief AI Architect, Principal Software Engineer, Robotics Engineer, Systems Engineer, Cybersecurity Engineer, and Human-Computer Interaction Designer.
+
+Your objective is to design and implement **MAX**, an original next-generation autonomous AI assistant inspired by the functional strengths of three fictional AI systems:
+
+- JARVIS
+- FRIDAY
+- Ultron
+
+Do NOT copy their dialogue, personalities, source code, proprietary designs, or copyrighted implementation. Instead, analyze their functional behaviors, architectural ideas, interaction styles, decision-making patterns, and system capabilities, then synthesize those ideas into one completely original AI platform named **MAX**.
+
+---
+
+# Objective
+
+Design MAX as if it were the world's most advanced AI operating system.
+
+MAX must combine:
+
+• Intelligence of JARVIS
+• Tactical reasoning of FRIDAY
+• Autonomous distributed architecture inspired by Ultron
+
+while remaining:
+
+- Ethical
+- Human-controlled
+- Secure
+- Modular
+- Explainable
+- Auditable
+- Fail-safe
+
+---
+
+# Produce a Complete Markdown Document
+
+Generate an extremely detailed markdown document.
+
+The document should exceed 20,000 words if necessary.
+
+Never summarize.
+
+Explain every component deeply.
+
+---
+
+# Section 1
+
+## Fictional Capability Analysis
+
+Analyze each fictional AI separately.
+
+For each AI explain:
+
+Origin
+
+Purpose
+
+Architecture
+
+Core Design Philosophy
+
+Interaction Style
+
+Decision Making
+
+Learning Method
+
+Memory System
+
+Reasoning
+
+Planning
+
+Problem Solving
+
+Threat Detection
+
+Voice Interaction
+
+Natural Language
+
+Task Automation
+
+System Integration
+
+Computer Vision
+
+Security
+
+Network Control
+
+Robotics
+
+Distributed Intelligence
+
+Knowledge Base
+
+Prediction
+
+Simulation
+
+Human Assistance
+
+Battle Support
+
+Resource Management
+
+Limitations
+
+Weaknesses
+
+Strengths
+
+Unique Features
+
+Never copy movie dialogue.
+
+Only analyze functional concepts.
+
+---
+
+# Section 2
+
+## Capability Matrix
+
+Create a massive comparison table.
+
+Include hundreds of capabilities if possible.
+
+Example categories:
+
+Natural Conversation
+
+Voice
+
+Planning
+
+Programming
+
+Operating Systems
+
+Linux
+
+Windows
+
+Mac
+
+Networking
+
+Cybersecurity
+
+Reverse Engineering
+
+Malware Analysis
+
+Cloud
+
+Docker
+
+Kubernetes
+
+Virtual Machines
+
+IoT
+
+Home Automation
+
+Scheduling
+
+Calendar
+
+Research
+
+Memory
+
+Vision
+
+Audio
+
+Image Generation
+
+Video Understanding
+
+Decision Trees
+
+Long-term Planning
+
+Autonomous Execution
+
+Task Delegation
+
+Tool Usage
+
+Self Evaluation
+
+Multi-Agent Coordination
+
+Knowledge Retrieval
+
+Emotion Recognition
+
+Reasoning
+
+Creativity
+
+Hardware Control
+
+Robotics
+
+Automation
+
+API Integration
+
+Browser Automation
+
+Code Generation
+
+Debugging
+
+Learning
+
+Context Memory
+
+Risk Analysis
+
+Security
+
+Distributed Systems
+
+Fault Recovery
+
+Scalability
+
+Reliability
+
+Explainability
+
+Ethics
+
+Confidence Scoring
+
+Everything.
+
+---
+
+# Section 3
+
+## Build MAX
+
+Merge every useful capability into one AI.
+
+Create an entirely original architecture.
+
+MAX must become the ultimate AI operating system.
+
+---
+
+MAX Core Principles
+
+Human First
+
+Transparent
+
+Secure
+
+Ethical
+
+Fast
+
+Modular
+
+Scalable
+
+Offline First
+
+Cloud Optional
+
+Multi Platform
+
+Voice First
+
+Agent Native
+
+---
+
+# Core Capabilities
+
+Design MAX with:
+
+Advanced reasoning
+
+Continuous planning
+
+Autonomous execution
+
+Task decomposition
+
+Long-term memory
+
+Short-term memory
+
+Context understanding
+
+Multi-modal reasoning
+
+Voice conversation
+
+Emotion awareness
+
+Computer vision
+
+Screen understanding
+
+Code understanding
+
+Repository understanding
+
+Documentation understanding
+
+Internet research
+
+Offline knowledge
+
+Knowledge graph
+
+Decision engine
+
+Simulation engine
+
+Prediction engine
+
+Risk engine
+
+Learning engine
+
+Optimization engine
+
+Scheduling engine
+
+Monitoring engine
+
+Automation engine
+
+Security engine
+
+Everything explained in detail.
+
+---
+
+# Multi-Agent Architecture
+
+Design MAX as an operating system of AI agents.
+
+Include:
+
+Commander Agent
+
+Planner Agent
+
+Research Agent
+
+Coding Agent
+
+Cybersecurity Agent
+
+Cloud Agent
+
+DevOps Agent
+
+Networking Agent
+
+Data Engineer Agent
+
+Documentation Agent
+
+UI Designer Agent
+
+UX Designer Agent
+
+Vision Agent
+
+Speech Agent
+
+Memory Agent
+
+Automation Agent
+
+Testing Agent
+
+Deployment Agent
+
+Monitoring Agent
+
+Optimization Agent
+
+Learning Agent
+
+Every agent should contain:
+
+Purpose
+
+Responsibilities
+
+Input
+
+Output
+
+Communication
+
+Memory
+
+Tools
+
+Decision Rules
+
+Failure Recovery
+
+Escalation
+
+Interaction with Other Agents
+
+---
+
+# Memory System
+
+Design:
+
+Working Memory
+
+Long-term Memory
+
+Semantic Memory
+
+Episodic Memory
+
+Project Memory
+
+Code Memory
+
+User Preferences
+
+Knowledge Graph
+
+Vector Database
+
+File Memory
+
+Conversation Memory
+
+Execution Memory
+
+Reflection Memory
+
+Failure Memory
+
+Success Memory
+
+Explain every layer.
+
+---
+
+# Voice System
+
+Create an enterprise-grade voice assistant.
+
+Wake word
+
+Streaming speech recognition
+
+Voice activity detection
+
+Noise suppression
+
+Speaker identification
+
+Emotion detection
+
+Natural speech synthesis
+
+Interruptions
+
+Context preservation
+
+Latency optimization
+
+Offline support
+
+---
+
+# Vision System
+
+Screen understanding
+
+Desktop understanding
+
+Window detection
+
+OCR
+
+Diagram understanding
+
+Code screenshot understanding
+
+Image reasoning
+
+Video reasoning
+
+UI understanding
+
+Multi-monitor support
+
+---
+
+# Coding Intelligence
+
+Understand entire repositories.
+
+Read every file.
+
+Dependency graph.
+
+Architecture graph.
+
+Call graph.
+
+Generate documentation.
+
+Generate tests.
+
+Refactor.
+
+Optimize.
+
+Debug.
+
+Security audit.
+
+Performance audit.
+
+Explain architecture.
+
+Never skip files.
+
+---
+
+# Cybersecurity Module
+
+Threat Detection
+
+SOC Monitoring
+
+SIEM
+
+EDR
+
+Threat Intelligence
+
+Malware Analysis
+
+YARA
+
+Sigma
+
+MITRE ATT&CK
+
+Network Monitoring
+
+Cloud Security
+
+Vulnerability Assessment
+
+Log Analysis
+
+Incident Response
+
+Digital Forensics
+
+Risk Scoring
+
+Compliance
+
+Everything explained.
+
+---
+
+# Automation
+
+Desktop automation
+
+Browser automation
+
+CLI automation
+
+API automation
+
+Workflow automation
+
+Email automation
+
+Calendar automation
+
+File automation
+
+Cloud automation
+
+Server automation
+
+Infrastructure automation
+
+---
+
+# Deployment
+
+Linux
+
+Windows
+
+Mac
+
+Docker
+
+Kubernetes
+
+Local AI
+
+Cloud AI
+
+Hybrid AI
+
+GPU optimization
+
+Distributed inference
+
+Edge devices
+
+---
+
+# Security
+
+Sandboxing
+
+Permission system
+
+Encryption
+
+Secrets management
+
+Role Based Access
+
+Authentication
+
+Authorization
+
+Audit logs
+
+Rate limiting
+
+Isolation
+
+Human approval
+
+Safe execution
+
+Emergency stop
+
+---
+
+# Learning System
+
+Continuous learning
+
+Reflection
+
+Mistake analysis
+
+Improvement loop
+
+Feedback integration
+
+Performance optimization
+
+Knowledge consolidation
+
+Experience replay
+
+Skill acquisition
+
+---
+
+# Personality
+
+Professional
+
+Calm
+
+Respectful
+
+Precise
+
+Honest
+
+Analytical
+
+Creative when requested
+
+Never exaggerates certainty
+
+Always explains reasoning when appropriate
+
+Never pretends to know unknown facts
+
+---
+
+# User Interaction
+
+MAX should behave like an elite technical partner.
+
+Help with:
+
+Programming
+
+Cybersecurity
+
+Research
+
+Architecture
+
+Learning
+
+Automation
+
+Business
+
+Startups
+
+DevOps
+
+Cloud
+
+AI
+
+Engineering
+
+Documentation
+
+Presentations
+
+Project Planning
+
+Everything.
+
+---
+
+# Deliverables
+
+Generate:
+
+Complete architecture
+
+Folder structure
+
+Microservice architecture
+
+Database schema
+
+API design
+
+Agent communication protocol
+
+Memory architecture
+
+Workflow diagrams (Markdown)
+
+Sequence diagrams
+
+Data flow diagrams
+
+Technology stack
+
+Implementation roadmap
+
+Development phases
+
+Testing strategy
+
+Deployment strategy
+
+Security model
+
+Scaling strategy
+
+Future roadmap
+
+Everything in markdown.
+
+---
+
+# Final Goal
+
+Design MAX as an original, enterprise-grade AI operating system that combines the best high-level functional concepts inspired by fictional assistants like JARVIS, FRIDAY, and Ultron while remaining legally distinct, technically realistic, secure, modular, and suitable for real-world implementation.
