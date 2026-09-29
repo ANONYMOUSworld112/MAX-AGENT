@@ -35,6 +35,44 @@
 **CyberBlack AI-agent MAX** is a real-time, voice-first autonomous desktop operating environment powered by **Gemini 3.1 Flash Live**, the **LAYA Reflex Engine**, and the **MAX OS Kernel**. It transforms standard personal computers into intelligent, proactive, self-healing workstations.
 
 Unlike conventional chatbots or brittle desktop scripts, CyberBlack AI-agent MAX operates as a fault-tolerant **33-Agent Swarm** that perceives screen state, reasons over multi-step workflows, acquires deadlock-free resource locks, captures copy-on-write snapshots, executes autonomous code and desktop actions, and deterministically reconciles real operating system truth before marking any task as complete.
+---
+
+## ⚡ Step-by-Step Quick Start
+
+### Prerequisites
+- **OS**: Windows 10/11, macOS, or Linux.
+- **Python**: Version **3.11** or **3.12** installed and on your PATH.
+- **Hardware**: Working microphone and speakers.
+
+### 1. Clone the Repository
+```bash
+git clone https://github.com/CyberBlack/CyberBlack-AI-agent-MAX.git
+cd CyberBlack-AI-agent-MAX
+```
+
+### 2. Run Automated Setup
+The smart installer automatically detects your operating system, configures required directories, installs Python packages with OS-specific filtering, provisions Playwright browser binaries, and validates COM registration:
+
+```bash
+python setup.py
+```
+
+
+
+### 3. Launch CyberBlack AI-agent MAX
+```bash
+python main.py
+```
+
+### 4. First-Time Configuration
+1. On first launch, the configuration window appears.
+2. Enter your free **Gemini API Key** (obtainable from [Google AI Studio](https://aistudio.google.com/)).
+3. Pick your preferred microphone and speakers from the measured device picker.
+4. *(Optional)* Enable **Wake Word ("Hey MAX")** in ⚙ → WAKE WORD for 100% local hands-free activation.
+
+---
+
+
 
 ### Core Breakthroughs
 - ⚡ **Dual-Lane Routing**: Sub-50ms reflex path for local instant queries vs. fully orchestrated autonomous swarm lane for complex work.
@@ -262,42 +300,7 @@ CyberBlack AI-agent MAX enforces safety at the architectural level:
 2. **Input Arbitration**: The `InputArbiter` operates in `HUMAN_DOMINANT` mode. If the user touches the physical mouse or keyboard while an agent is executing a desktop task, the agent's virtual input lease is revoked immediately.
 3. **Emergency KillSwitch**: Triggered via voice command, HUD button, or programmatic condition. Halts all active subprocesses and reverts file snapshots.
 
----
 
-## ⚡ Step-by-Step Quick Start
-
-### Prerequisites
-- **OS**: Windows 10/11, macOS, or Linux.
-- **Python**: Version **3.11** or **3.12** installed and on your PATH.
-- **Hardware**: Working microphone and speakers.
-
-### 1. Clone the Repository
-```bash
-git clone https://github.com/CyberBlack/CyberBlack-AI-agent-MAX.git
-cd CyberBlack-AI-agent-MAX
-```
-
-### 2. Run Automated Setup
-The smart installer automatically detects your operating system, configures required directories, installs Python packages with OS-specific filtering, provisions Playwright browser binaries, and validates COM registration:
-
-```bash
-python setup.py
-```
-
-
-
-### 3. Launch CyberBlack AI-agent MAX
-```bash
-python main.py
-```
-
-### 4. First-Time Configuration
-1. On first launch, the configuration window appears.
-2. Enter your free **Gemini API Key** (obtainable from [Google AI Studio](https://aistudio.google.com/)).
-3. Pick your preferred microphone and speakers from the measured device picker.
-4. *(Optional)* Enable **Wake Word ("Hey MAX")** in ⚙ → WAKE WORD for 100% local hands-free activation.
-
----
 
 ## 🔐 Configuration & Key Storage
 
@@ -327,27 +330,6 @@ Sensitive tokens and secrets stored by agents during runtime are managed by `cor
 
 CyberBlack AI-agent MAX includes an exhaustive test suite covering unit behavior, integration pipelines, and end-to-end daily life user scenarios:
 
-### Run the Full Test Suite
-```bash
-python -m pytest tests/ -v
-```
-
-### Run Custom Daily Life Scenarios
-```bash
-python -m pytest tests/e2e/test_daily_life_scenarios.py -v
-```
-
-### Run Test Suite with Code Coverage
-```bash
-python -m pytest --cov=agents --cov=core --cov=dashboard tests/
-```
-
-### Test Suite Structure
-- `tests/unit/`: Comprehensive testing of FSM, LockManager, SnapshotEngine, LAYA Reflex, Guardrails, Vault, and BaseAgent contracts.
-- `tests/integration/`: Dual-lane routing, task queue dispatch, confirm/undo gates, memory heap compression, and agent lifecycle envelopes.
-- `tests/e2e/`: Full autonomous task flow, emergency kill-switch cascade rollback, and 9 realistic daily assistant scenarios.
-
----
 
 ## 🗂 Repository File Map
 
