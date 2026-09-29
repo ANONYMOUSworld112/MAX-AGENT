@@ -46,8 +46,8 @@ Unlike conventional chatbots or brittle desktop scripts, CyberBlack AI-agent MAX
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/CyberBlack/CyberBlack-AI-agent-MAX.git
-cd CyberBlack-AI-agent-MAX
+git clone https://github.com/ANONYMOUSworld112/MAX-AGENT.git
+cd MAX-AGENT
 ```
 
 ### 2. Run Automated Setup
