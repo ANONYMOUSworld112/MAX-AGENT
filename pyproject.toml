@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cyberblack-ai-agent-max"
+version = "3.0.0"
+description = "CyberBlack AI-agent MAX: High-Reliability Autonomous Desktop Agent Swarm"
+readme = "readme.md"
+requires-python = ">=3.10"
+license = "CC-BY-NC-4.0"
+authors = [
+    { name = "CyberBlack & MAX Autonomous Systems" }
+]
+dynamic = ["dependencies", "optional-dependencies", "scripts"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: MacOS",
+    "Operating System :: POSIX :: Linux",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+asyncio_mode = "strict"
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::RuntimeWarning",
+    "ignore::UserWarning",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["agents*", "core*", "actions*", "dashboard*", "ui*", "memory*"]

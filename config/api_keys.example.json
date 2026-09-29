@@ -1,0 +1,12 @@
+{
+  "gemini_api_key": "",
+  "os_system": "windows",
+  "voice_name": "Aoede",
+  "assistant_name": "MAX",
+  "user_name": "",
+  "morning_brief_enabled": false,
+  "input_device": "",
+  "output_device": "",
+  "theme": "dark",
+  "wake_word_enabled": false
+}

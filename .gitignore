@@ -1,0 +1,67 @@
+# ── CyberBlack AI-agent MAX + MAX OS + LAYA: Git Ignore ─────────────────────────────────────
+# Everything listed here is created by the app on first run or during testing.
+# A fresh clone boots straight to setup screen with clean defaults.
+
+# ── Secrets & Credentials ─────────────────────────────────────────────────────
+# Gemini API keys & per-plugin credentials
+config/api_keys.json
+# Dashboard TLS private keys and certs
+config/certs/
+# Linked WhatsApp session data
+config/whatsapp_web/
+# Google OAuth tokens (Gmail / Calendar)
+**/token*.json
+# Google OAuth client secrets
+**/client_secret*.json
+*credentials*.json
+.env
+.env.*
+
+# ── Persistent Storage & Databases ────────────────────────────────────────────
+memory/*.db
+core/max_infra/*.db
+*.sqlite
+*.sqlite3
+
+# ── Autonomous Snapshots & Rollback Data ──────────────────────────────────────
+.snapshots/
+temp_laya/
+
+# ── Python Build & Packaging ──────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# ── Testing & Code Coverage ───────────────────────────────────────────────────
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# ── Virtual Environments ──────────────────────────────────────────────────────
+.venv/
+venv/
+env/
+ENV/
+
+# ── Editors & OS Metadata ─────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Runtime Output & Logs ─────────────────────────────────────────────────────
+*.log
+logs/*
+!logs/.gitkeep
+downloads/*
+!downloads/.gitkeep
+screenshots/*
+!screenshots/.gitkeep
