@@ -334,8 +334,8 @@ The implementation follows the 13 gated phases specified in [MAX_AGENT_MASTER_IM
 - **Phase 5 — Scheduler & Resource Leases:** ✅ Complete. `TaskScheduler` with SQLite WAL persistence, injectable Clock, RFC 5545 recurrence engine, priority aging, DST handling, misfire policies, `LockManager` shared/exclusive resource leases, and concurrent `TaskGraphDispatcher`. 226 tests passing.
 - **Phase 6 — Memory & Context Hardening:** ✅ Complete. Provenance gating preventing memory poisoning, task-scoped `ContextEngine` with token budget enforcement, non-destructive SQLite `StateDB` migration and indexed queries. 237 tests passing.
 - **Phase 7 — ProcessManager & Security:** ✅ Complete. Windows Job Objects kernel process tree termination, dashboard network hardening to `127.0.0.1` with token auth and DNS rebinding / CSWSH protection, UAC firewall removal, and credential sanitizer. 255 tests passing.
-- **Phase 8 — Verification Engine:** 🔄 Next. Multi-method verification, self-correction, failure recovery.
-- **Phase 9 — Provider Abstraction:** Local ONNX / cloud model routing, offline resilience.
+- **Phase 8 — Verification Engine:** ✅ Complete. L0-L3 hierarchical verification, poll_until polling, gateway post-execution verification gate, ErrorClass classification, bounded retry with backoff, git checkpoint rollback, and self-correction loop. 267 tests passing.
+- **Phase 9 — Provider Abstraction:** 🔄 Next. Local ONNX / cloud model routing, offline resilience.
 - **Phase 10 — Advanced Capabilities:** RSVP speed reader, voice streaming, browser automation.
 - **Phase 11 — Observability & Dashboard:** Real-time HUD progress widget, authenticated API.
 - **Phase 12 — Final Acceptance:** Full 25-task golden benchmark re-test, ≥80% verified success rate.

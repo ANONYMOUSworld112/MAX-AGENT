@@ -538,6 +538,61 @@ All centralized process lifecycle management via Windows Job Objects, clean proc
 Phase 7 gate tagged `gate-p7-approved`. Development proceeds to:
 - **Phase 8:** Verification Engine & Self-Correction (`core/verification/`: 3-tier verification, automated self-correction loop, deterministic artifact validation).
 
+## 20. Phase 8 Verification Engine & Self-Correction Status (2026-09-30)
+
+All multi-tier verification engine features (L0-L3 levels, poll_until polling, evidence generation), ExecutionGateway post-execution verification wiring, ErrorClass classification, bounded retry with backoff, git checkpoint rollback, and structured self-correction loop defined in Phase 8 of [MAX_AGENT_MASTER_IMPLEMENTATION_PLAN.md](../MAX_AGENT_MASTER_IMPLEMENTATION_PLAN.md) are completed and validated on branch `max/p8-verification`.
+
+### Summary of Completed Phase 8 Deliverables
+
+| Task | Component | File | Verification |
+|:---|:---|:---|:---:|
+| **8.1** | VerificationEngine Wired to Gateway | `core/verification/engine.py`, `core/gateway.py` | L0-L3 hierarchy, poll_until polling eliminating UI/process race conditions, evidence recording, gateway post-execution verification gate, UNKNOWN never treated as SUCCESS (`tests/unit/test_verification_engine.py`: 6 passed) |
+| **8.2** | RecoveryEngine with Error Classification | `core/recovery_engine.py` | Deterministic error classification (`TRANSIENT`, `ENVIRONMENT`, `LOGIC`, `RESOURCE`, `EXTERNAL`), bounded retry eligibility gates, exponential backoff, git worktree checkpoint rollback (`tests/unit/test_recovery.py`: 3 passed) |
+| **8.3** | Self-Correction Loop & Budget Enforcement | `core/recovery_engine.py` | Structured `Plan → Execute → Observe → Verify → Critique → Replan` loop, failure critiques with alternative approach switching on repeated errors, hard iteration and wall-clock timeout budget stops (`tests/unit/test_self_correction.py`: 3 passed) |
+
+### Test Suite Summary: 267 Passing Tests
+```text
+============================= 267 passed in 13.96s =============================
+- tests/unit/test_contracts.py: 20 passed
+- tests/unit/test_state_machine.py: 27 passed
+- tests/unit/test_clock.py: 13 passed
+- tests/unit/test_events.py: 18 passed
+- tests/unit/test_gateway.py: 26 passed
+- tests/unit/test_capability_registry.py: 14 passed
+- tests/unit/test_intent_engine.py: 9 passed
+- tests/unit/test_plan_validator.py: 4 passed
+- tests/unit/test_agent_router.py: 9 passed
+- tests/unit/test_task_graph.py: 10 passed
+- tests/unit/test_desktop_no_exec.py: 6 passed
+- tests/unit/test_fake_desktop.py: 4 passed
+- tests/unit/test_app_launch.py: 6 passed
+- tests/unit/test_user_activity.py: 5 passed
+- tests/unit/test_coding_executor.py: 3 passed
+- tests/unit/test_sandbox.py: 4 passed
+- tests/unit/test_test_verifier.py: 3 passed
+- tests/unit/test_local_dev_worker.py: 2 passed
+- tests/unit/test_resource_leases.py: 7 passed
+- tests/unit/test_scheduler.py: 9 passed
+- tests/unit/test_concurrent_dispatch.py: 4 passed
+- tests/unit/test_memory_provenance.py: 5 passed
+- tests/unit/test_context_engine.py: 3 passed
+- tests/unit/test_memory_schema.py: 3 passed
+- tests/unit/test_process_manager.py: 4 passed
+- tests/unit/test_dashboard_security.py: 7 passed
+- tests/unit/test_sanitizer.py: 7 passed
+- tests/unit/test_verification_engine.py: 6 passed
+- tests/unit/test_recovery.py: 3 passed
+- tests/unit/test_self_correction.py: 3 passed
+- tests/tier0_characterization/: 21 passed
+- tests/test_banned_imports.py: 1 passed
+- tests/evals/test_eval_suite.py: 1 passed
+```
+
+### Next Implementation Steps
+Phase 8 gate tagged `gate-p8-approved`. Development proceeds to:
+- **Phase 9:** Provider Abstraction & Offline Resilience (`core/providers/`: Protocol, local Ollama / ONNX fallback, cloud Gemini provider).
+
+
 
 
 

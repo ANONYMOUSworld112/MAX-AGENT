@@ -48,6 +48,7 @@ from core.contracts import (
 )
 from core.policy import PolicyEngine, PolicyDecision, ConfirmationType
 from core.events import EventBus, AuditWriter, EventEnvelope
+from core.verification.engine import VerificationEngine
 
 logger = logging.getLogger("max.gateway")
 
@@ -151,12 +152,14 @@ class ExecutionGateway:
         policy: PolicyEngine | None = None,
         event_bus: EventBus | None = None,
         audit: AuditWriter | None = None,
+        verification_engine: VerificationEngine | None = None,
         max_workers: int = 4,
         default_timeout: float = 30.0,
     ):
         self._policy = policy or PolicyEngine()
         self._event_bus = event_bus or EventBus()
         self._audit = audit or AuditWriter()
+        self._verification_engine = verification_engine or VerificationEngine()
         self._handlers: dict[str, ActionHandler] = {}
         self._confirmations = ConfirmationTracker()
         self._executor = ThreadPoolExecutor(max_workers=max_workers)
@@ -186,14 +189,9 @@ class ExecutionGateway:
           2. Evaluate policy (risk + confirmation)
           3. Check/require confirmation
           4. Execute with timeout
-          5. Record audit event
-          6. Return result
-
-        Raises:
-            ActionNotRegisteredError: No handler for this action.
-            PolicyRejectionError: Policy prohibits this action.
-            ConfirmationRequiredError: User confirmation needed.
-            ExecutionTimeoutError: Action exceeded timeout.
+          5. Post-execution verification via VerificationEngine
+          6. Record audit event
+          7. Return result
         """
         start_time = time.monotonic()
         action = request.action
@@ -232,16 +230,25 @@ class ExecutionGateway:
             with self._lock:
                 self._execution_count += 1
 
+            # Step 6: Post-execution verification
+            v_report = self._verification_engine.verify_action(request, output)
+            verified_success = (v_report.outcome == VerificationOutcome.SUCCESS)
+
             result = ActionResult(
                 request_id=request.id,
                 task_id=request.task_id,
-                success=True,
+                success=verified_success,
                 output=output if isinstance(output, dict) else {"result": str(output)},
-                verification_outcome=VerificationOutcome.UNKNOWN,  # Verification is a separate step
+                verification_outcome=v_report.outcome,
                 duration_ms=duration_ms,
+                error_class=None if verified_success else ErrorClass.LOGIC,
+                error_message=None if verified_success else f"Post-execution verification failed: {v_report.errors}",
             )
 
-            self._emit_event("action.completed", request, result=result)
+            if verified_success:
+                self._emit_event("action.completed", request, result=result)
+            else:
+                self._emit_event("action.verification_failed", request, result=result)
             return result
 
         except FuturesTimeoutError:
