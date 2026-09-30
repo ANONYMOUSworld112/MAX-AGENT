@@ -4,7 +4,7 @@
 
 The end-to-end target design is in [MAX_VNEXT_ARCHITECTURE.md](MAX_VNEXT_ARCHITECTURE.md).
 
-**Implementation status:** Phase 0 (Forensic Audit & Baseline), Phase 1 (Foundations & Architecture Core), and Phase 2 (Task Planning & Deterministic Agent Routing) are complete and verified with 173 passing automated tests. All mock agent fakes are purged, single execution choke point is active, and intent/agent routing operates deterministically at 100% accuracy on golden benchmark tasks. Phase 3 (Desktop Automation & RCE elimination) is next.
+**Implementation status:** Phase 0 (Forensic Audit & Baseline), Phase 1 (Foundations & Architecture Core), Phase 2 (Task Planning & Deterministic Agent Routing), and Phase 3 (Desktop Automation & Application Launch Reliability) are complete and verified with 194 passing automated tests. All mock agent fakes are purged, single execution choke point is active, exec() RCE is eliminated, intent/agent routing operates deterministically at 100% accuracy on golden benchmark tasks, and desktop launches use L3 process/window verification. Phase 4 (Coding Workflow & OpenCode Worker) is next.
 
 ## 1. Desired user-visible behavior
 
@@ -310,4 +310,42 @@ All task planning, capability modeling, intent parsing, graph decomposition, and
 
 ### Next Implementation Steps
 Phase 2 gate tagged `gate-p2-approved`. Development proceeds to:
-- **Phase 3:** Desktop Automation & Application Launch Reliability (`actions/desktop.py` RCE purge, `core/adapters/windows/desktop.py`, process observation, window verification).
+- **Phase 3:** Desktop Automation & Application Launch Reliability (`actions/desktop.py` RCE purge, `core/adapters/windows_desktop.py`, process observation, window verification).
+
+## 15. Phase 3 Desktop Automation & Application Launch Reliability Status (2026-09-30)
+
+All desktop automation hardening, RCE elimination, semantic UIA targeting, guarded application launches, and human input conflict monitoring defined in Phase 3 of [MAX_AGENT_MASTER_IMPLEMENTATION_PLAN.md](../MAX_AGENT_MASTER_IMPLEMENTATION_PLAN.md) are completed and validated on branch `max/p3-desktop`.
+
+### Summary of Completed Phase 3 Deliverables
+
+| Task | Component | File | Verification |
+|:---|:---|:---|:---:|
+| **3.1** | Eliminate `exec()` RCE | `actions/desktop.py` | AST scan confirms zero `exec` / `eval` calls; parameterized primitives (`tests/unit/test_desktop_no_exec.py`: 6 passed) |
+| **3.2** | Desktop Adapters & UIA Semantic Targeting | `core/adapters/windows_desktop.py`, `core/adapters/fake_desktop.py`, `core/adapters/base.py` | UIA tree control search, click element, window list/focus, in-memory test double (`tests/unit/test_fake_desktop.py`: 4 passed) |
+| **3.3** | Application Registry & L3 Verification | `core/app_registry.py`, `actions/open_app.py` | Pre-resolved app catalog, `psutil` process table & window handle verification, zero false success on non-existent apps (`tests/unit/test_app_launch.py`: 6 passed) |
+| **3.4** | User Activity Monitor | `core/user_activity.py` | Win32 `GetLastInputInfo()` physical activity polling, `user.active` / `user.idle` EventBus transitions, automation pause guard (`tests/unit/test_user_activity.py`: 5 passed) |
+
+### Test Suite Summary: 194 Passing Tests
+```text
+============================= 194 passed in 6.29s =============================
+- tests/unit/test_contracts.py: 17 passed
+- tests/unit/test_state_machine.py: 26 passed
+- tests/unit/test_clock.py: 14 passed
+- tests/unit/test_events.py: 18 passed
+- tests/unit/test_gateway.py: 30 passed
+- tests/unit/test_capability_registry.py: 14 passed
+- tests/unit/test_intent_engine.py: 9 passed
+- tests/unit/test_plan_validator.py: 4 passed
+- tests/unit/test_agent_router.py: 9 passed
+- tests/unit/test_task_graph.py: 10 passed
+- tests/unit/test_desktop_no_exec.py: 6 passed
+- tests/unit/test_fake_desktop.py: 4 passed
+- tests/unit/test_app_launch.py: 6 passed
+- tests/unit/test_user_activity.py: 5 passed
+- tests/tier0_characterization/: 21 passed
+- tests/test_banned_imports.py: 1 passed
+```
+
+### Next Implementation Steps
+Phase 3 gate tagged `gate-p3-approved`. Development proceeds to:
+- **Phase 4:** Coding Workflow & OpenCode Worker Adapter (`agents/software/coding_agent.py`, workspace path confinement, headless git worktree, test verification loop).

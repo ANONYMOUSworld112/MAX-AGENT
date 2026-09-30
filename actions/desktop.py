@@ -1,4 +1,4 @@
-﻿#desktop.py
+#desktop.py
 import os
 import sys
 import json
@@ -35,121 +35,48 @@ def _get_desktop() -> Path:
             return Path(xdg)
     return Path.home() / "Desktop"
 
-def _build_sandbox() -> dict:
-    import time
+from core.adapters import get_desktop_adapter
 
-    safe_builtins = {
-        "print": print,
-        "len": len, "str": str, "int": int, "float": float,
-        "bool": bool, "list": list, "dict": dict, "tuple": tuple,
-        "range": range, "enumerate": enumerate, "sorted": sorted,
-        "isinstance": isinstance, "hasattr": hasattr, "getattr": getattr,
-        "max": max, "min": min, "sum": sum, "abs": abs,
-        "zip": zip, "map": map, "filter": filter,
-    }
 
-    sandbox = {
-        "__builtins__": safe_builtins,
-        "Path": Path,
-        "time": time,
-        "shutil": type("shutil", (), {
-            "copy2":      shutil.copy2,
-            "copytree":   shutil.copytree,
-            "disk_usage": shutil.disk_usage,
-        })(),
-        "os_path": os.path,  
-    }
+def click(x: int, y: int, clicks: int = 1, button: str = "left") -> str:
+    """Click at specific screen coordinates via platform adapter."""
+    adapter = get_desktop_adapter()
+    ok = adapter.click(x=x, y=y, clicks=clicks, button=button)
+    return f"Click at ({x}, {y}) {'succeeded' if ok else 'failed'}."
 
-    if _PYAUTOGUI:
-        sandbox["pyautogui"] = pyautogui
 
-    if _OS == "Windows":
-        try:
-            import ctypes
-            import winreg
-            sandbox["ctypes"] = ctypes
-            sandbox["winreg"] = type("winreg", (), {
-                # Sadece okuma
-                "OpenKey":      winreg.OpenKey,
-                "QueryValueEx": winreg.QueryValueEx,
-                "HKEY_CURRENT_USER": winreg.HKEY_CURRENT_USER,
-            })()
-        except ImportError:
-            pass
+def type_text(text: str, interval: float = 0.0) -> str:
+    """Type text into active focused control via platform adapter."""
+    adapter = get_desktop_adapter()
+    ok = adapter.type_text(text, interval=interval)
+    return f"Type text ({len(text)} chars) {'succeeded' if ok else 'failed'}."
 
-    return sandbox
+
+def hotkey(*keys: str) -> str:
+    """Trigger hotkey combination via platform adapter."""
+    adapter = get_desktop_adapter()
+    ok = adapter.hotkey(*keys)
+    return f"Hotkey {'+'.join(keys)} {'succeeded' if ok else 'failed'}."
+
+
+def find_and_click(name: str, control_type: str = "") -> str:
+    """Locate UIA element and click it via platform adapter."""
+    adapter = get_desktop_adapter()
+    elem = adapter.find_element(name=name, control_type=control_type)
+    if not elem:
+        return f"Element '{name}' not found."
+    ok = adapter.click_element(elem)
+    return f"Clicked element '{name}' ({elem.get('control_type', 'unknown')})."
 
 
 def _execute_generated_code(code: str, player=None) -> str:
-    if not code or code.strip() == "UNSAFE":
-        return "This action cannot be performed safely."
-
-    # Kod temizleme
-    if code.startswith("```"):
-        lines = code.split("\n")
-        code  = "\n".join(lines[1:-1]).strip()
-
-    sandbox      = _build_sandbox()
-    output_lines = []
-    sandbox["__builtins__"]["print"] = lambda *a: output_lines.append(" ".join(str(x) for x in a))
-
-    try:
-        exec(compile(code, "<max_desktop>", "exec"), sandbox)
-        return "\n".join(output_lines) if output_lines else "Done."
-    except Exception as e:
-        print(f"[Desktop] Exec error: {e}\nCode:\n{code[:300]}")
-        return f"Execution error: {e}"
+    """Disabled for security (Task 3.1 & Rule 1-S1). Arbitrary code execution has been removed."""
+    return "Arbitrary code execution has been removed for security. Use parameterized desktop primitives (click, type_text, hotkey)."
 
 
 def _ask_gemini_for_desktop_action(task: str) -> str:
-
-    from google import genai as _genai
-    _client = _genai.Client(api_key=_get_api_key())
-
-    desktop = str(_get_desktop())
-
-    os_specific = ""
-    if _OS == "Windows":
-        os_specific = "- ctypes (Windows API calls, read-only)\n- winreg (registry READ only)"
-    elif _OS == "Darwin":
-        os_specific = "- subprocess is NOT available; use pyautogui or Path only"
-    else:
-        os_specific = "- subprocess is NOT available; use pyautogui or Path only"
-
-    prompt = f"""You are a desktop automation assistant.
-Current OS: {_OS}
-Desktop path: {desktop}
-
-Generate safe Python code to accomplish the task below.
-Allowed modules ONLY:
-- pyautogui (mouse, keyboard — if needed)
-- pathlib.Path (file/folder inspection only, no deletion)
-- shutil.copy2, shutil.copytree, shutil.disk_usage (NO move, NO rmtree)
-- os_path (os.path equivalent, read-only)
-- time.sleep
-{os_specific}
-
-Hard rules:
-- NO file deletion (no unlink, no rmtree, no remove)
-- NO subprocess calls
-- NO exec() or eval() inside the code
-- NO import statements (modules are pre-injected)
-- NO file write operations except explicitly requested
-- If task cannot be done safely with these tools, output exactly: UNSAFE
-
-Output ONLY the Python code. No explanation, no markdown, no backticks.
-
-Task: {task}"""
-
-    try:
-        response = _client.models.generate_content(model="gemini-flash-latest", contents=prompt)
-        code = response.text.strip()
-        if code.startswith("```"):
-            lines = code.split("\n")
-            code  = "\n".join(lines[1:-1]).strip()
-        return code
-    except Exception as e:
-        return f"ERROR: {e}"
+    """Deprecated: Unsafe code generation replaced with structured primitives."""
+    return "UNSAFE"
 
 def set_wallpaper(image_path: str) -> str:
     path = Path(image_path).expanduser().resolve()
@@ -454,26 +381,33 @@ def desktop_control(
         elif action == "list":
             return list_desktop()
 
-        elif action == "stats":
-            return get_desktop_stats()
+        elif action == "click":
+            x = int(params.get("x", 0))
+            y = int(params.get("y", 0))
+            clicks = int(params.get("clicks", 1))
+            button = str(params.get("button", "left"))
+            return click(x, y, clicks=clicks, button=button)
+
+        elif action == "type":
+            text = str(params.get("text", ""))
+            return type_text(text)
+
+        elif action == "hotkey":
+            keys = params.get("keys", [])
+            if isinstance(keys, str):
+                keys = [keys]
+            return hotkey(*keys)
+
+        elif action == "find_and_click":
+            name = str(params.get("name", ""))
+            ctype = str(params.get("control_type", ""))
+            return find_and_click(name, control_type=ctype)
 
         elif action == "task" or task:
-            actual_task = task or params.get("description", "")
-            if not actual_task:
-                return "Please describe what you want to do on the desktop."
-
-            print(f"[Desktop] Asking Gemini: {actual_task}")
-            if player:
-                player.write_log("[Desktop] Generating action...")
-
-            code = _ask_gemini_for_desktop_action(actual_task)
-            return _execute_generated_code(code, player=player)
+            return "Arbitrary desktop task execution via code generation is disabled for safety. Use structured actions (click, type, hotkey, find_and_click)."
 
         else:
-            if action:
-                code = _ask_gemini_for_desktop_action(action)
-                return _execute_generated_code(code, player=player)
-            return "No action or task specified."
+            return f"Unknown desktop action: {action}"
 
     except Exception as e:
         print(f"[Desktop] Error: {e}")

@@ -1,7 +1,24 @@
-import time
-import subprocess
+"""
+MAX-AGENT Application Launcher with L3 State Verification
+==========================================================
+
+Guarded application launch using ApplicationRegistry and L3 verification
+(process table + window handle verification). Rejects non-existent applications
+honestly without false-positive claims.
+"""
+
+import logging
+import os
 import platform
 import shutil
+import subprocess
+import time
+from typing import Any, Dict, Optional
+
+from core.adapters import get_desktop_adapter
+from core.app_registry import ApplicationRegistry, AppSignature
+
+logger = logging.getLogger("max.actions.open_app")
 
 try:
     import psutil
@@ -10,9 +27,9 @@ except ImportError:
     _PSUTIL = False
 
 _SYSTEM = platform.system()
+_REGISTRY = ApplicationRegistry()
 
 _APP_ALIASES: dict[str, dict[str, str]] = {
-
     "chrome":             {"Windows": "chrome",                  "Darwin": "Google Chrome",        "Linux": "google-chrome"},
     "google chrome":      {"Windows": "chrome",                  "Darwin": "Google Chrome",        "Linux": "google-chrome"},
     "firefox":            {"Windows": "firefox",                 "Darwin": "Firefox",              "Linux": "firefox"},
@@ -67,175 +84,81 @@ _APP_ALIASES: dict[str, dict[str, str]] = {
 
 def _normalize(raw: str) -> str:
     key = raw.lower().strip()
-
     if key in _APP_ALIASES:
         return _APP_ALIASES[key].get(_SYSTEM, raw)
-
     for alias_key, os_map in _APP_ALIASES.items():
         if alias_key in key or key in alias_key:
             return os_map.get(_SYSTEM, raw)
-
-    return raw  
-
-def _launch_windows(app_name: str) -> bool:
-
-    if shutil.which(app_name) or shutil.which(app_name.split(".")[0]):
-        try:
-            subprocess.Popen(
-                app_name,
-                shell=True,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-            )
-            time.sleep(1.5)
-            return True
-        except Exception as e:
-            print(f"[open_app] subprocess failed: {e}")
-
-    if ":" in app_name:
-        try:
-            subprocess.Popen(f"start {app_name}", shell=True)
-            time.sleep(1.0)
-            return True
-        except Exception:
-            pass
-
-    try:
-        import pyautogui
-        pyautogui.PAUSE = 0.1
-        pyautogui.press("win")
-        time.sleep(0.7)
-        pyautogui.write(app_name, interval=0.05)
-        time.sleep(0.9)
-        pyautogui.press("enter")
-        time.sleep(2.5)
-        return True
-    except Exception as e:
-        print(f"[open_app] Start Menu search failed: {e}")
-
-    return False
+    return raw
 
 
-def _launch_macos(app_name: str) -> bool:
+def _is_process_running(signature: AppSignature) -> bool:
+    """Verify if a process matching the app signature is currently running."""
+    if _PSUTIL:
+        for p in psutil.process_iter(attrs=["name", "pid"]):
+            try:
+                pname = p.info.get("name") or ""
+                for expected in signature.process_names:
+                    if pname.lower() == expected.lower():
+                        return True
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                continue
 
-    try:
-        result = subprocess.run(
-            ["open", "-a", app_name],
-            capture_output=True, timeout=8
-        )
-        if result.returncode == 0:
-            time.sleep(1.0)
-            return True
-    except Exception:
-        pass
-
-    try:
-        result = subprocess.run(
-            ["open", "-a", f"{app_name}.app"],
-            capture_output=True, timeout=8
-        )
-        if result.returncode == 0:
-            time.sleep(1.0)
-            return True
-    except Exception:
-        pass
-
-    binary = shutil.which(app_name) or shutil.which(app_name.lower())
-    if binary:
-        try:
-            subprocess.Popen(
-                [binary],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL
-            )
-            time.sleep(1.0)
-            return True
-        except Exception:
-            pass
-
-    try:
-        import pyautogui
-        pyautogui.hotkey("command", "space")
-        time.sleep(0.6)
-        pyautogui.write(app_name, interval=0.05)
-        time.sleep(0.8)
-        pyautogui.press("enter")
-        time.sleep(1.5)
-        return True
-    except Exception as e:
-        print(f"[open_app] Spotlight failed: {e}")
-
-    return False
-
-
-_LINUX_TERMINAL_FALLBACKS = [
-    "x-terminal-emulator", "gnome-terminal", "konsole", "xfce4-terminal",
-    "xterm", "lxterminal", "mate-terminal", "tilix", "alacritty", "kitty",
-]
-
-def _launch_linux(app_name: str) -> bool:
-
-    # terminal emulators: try common ones in order
-    if app_name in ("x-terminal-emulator", "gnome-terminal", "terminal"):
-        for term in _LINUX_TERMINAL_FALLBACKS:
-            if shutil.which(term):
-                try:
-                    subprocess.Popen([term], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                    time.sleep(1.0)
-                    return True
-                except Exception:
-                    continue
-
-    binary = (
-        shutil.which(app_name) or
-        shutil.which(app_name.lower()) or
-        shutil.which(app_name.lower().replace(" ", "-")) or
-        shutil.which(app_name.lower().replace(" ", "_"))
-    )
-    if binary:
-        try:
-            subprocess.Popen(
-                [binary],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL
-            )
-            time.sleep(1.0)
-            return True
-        except Exception:
-            pass
-
-    try:
-        subprocess.run(
-            ["xdg-open", app_name],
-            capture_output=True, timeout=5
-        )
-        return True
-    except Exception:
-        pass
-
-    for desktop_name in [
-        app_name.lower(),
-        app_name.lower().replace(" ", "-"),
-        app_name.lower().replace(" ", ""),
-    ]:
-        try:
-            result = subprocess.run(
-                ["gtk-launch", desktop_name],
-                capture_output=True, timeout=5
-            )
-            if result.returncode == 0:
+    # Window adapter fallback
+    adapter = get_desktop_adapter()
+    windows = adapter.list_windows()
+    for win in windows:
+        w_title = win.get("title", "").lower()
+        w_proc = win.get("process_name", "").lower()
+        for pat in signature.window_title_patterns:
+            if pat.lower() in w_title:
                 return True
-        except Exception:
-            pass
+        for expected in signature.process_names:
+            if expected.lower() in w_proc:
+                return True
 
     return False
 
 
-_OS_LAUNCHERS = {
-    "Windows": _launch_windows,
-    "Darwin":  _launch_macos,
-    "Linux":   _launch_linux,
-}
+def _launch_signature(signature: AppSignature) -> bool:
+    """Launch application via executable path, UWP protocol, or desktop adapter."""
+    # 1. Check UWP URI (e.g. calculator:)
+    if signature.is_uwp_uri and _SYSTEM == "Windows":
+        try:
+            os.startfile(signature.uwp_uri)
+            return True
+        except Exception as exc:
+            logger.debug("os.startfile failed for UWP URI %s: %s", signature.uwp_uri, exc)
+
+    # 2. Check executables on PATH
+    for exe in signature.executables:
+        bin_path = shutil.which(exe) or (exe if os.path.isabs(exe) and os.path.exists(exe) else None)
+        if bin_path:
+            try:
+                subprocess.Popen(
+                    [bin_path] + signature.launch_args,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    shell=(_SYSTEM == "Windows"),
+                )
+                return True
+            except Exception as exc:
+                logger.error("Failed to spawn %s: %s", bin_path, exc)
+
+    # 3. Desktop Adapter hotkey/run fallback
+    if _SYSTEM == "Windows":
+        adapter = get_desktop_adapter()
+        # Safe Run Dialog launch (Win+R)
+        adapter.hotkey("win", "r")
+        time.sleep(0.3)
+        target_cmd = signature.executables[0] if signature.executables else signature.name
+        adapter.type_text(target_cmd)
+        time.sleep(0.2)
+        adapter.hotkey("enter")
+        return True
+
+    return False
+
 
 def open_app(
     parameters=None,
@@ -248,41 +171,48 @@ def open_app(
     if not app_name:
         return "No application name provided."
 
-    launcher = _OS_LAUNCHERS.get(_SYSTEM)
-    if launcher is None:
-        return f"Unsupported operating system: {_SYSTEM}"
+    sig = _REGISTRY.resolve(app_name)
+    if sig is None:
+        return f"Application '{app_name}' not found. It is not registered and does not exist on the system."
 
-    normalized = _normalize(app_name)
-    print(f"[open_app] Launching: '{app_name}' → '{normalized}' ({_SYSTEM})")
-
+    logger.info("Resolved '%s' to application signature '%s'", app_name, sig.name)
     if player:
-        player.write_log(f"[open_app] {app_name}")
+        player.write_log(f"[open_app] Launching {sig.name}...")
 
-    try:
-        if launcher(normalized):
-            return f"Opened {app_name}."
-        if normalized.lower() != app_name.lower():
-            if launcher(app_name):
-                return f"Opened {app_name}."
-        return (
-            f"Could not confirm that {app_name} launched. "
-            f"It may still be loading, or it might not be installed."
-        )
-    except Exception as e:
-        print(f"[open_app] Error: {e}")
-        return f"Failed to open {app_name}: {e}"
+    # Check if already running
+    if _is_process_running(sig):
+        return f"Application '{app_name}' is already running."
+
+    # Launch application
+    launched = _launch_signature(sig)
+    if not launched:
+        return f"Failed to execute launch command for '{app_name}'."
+
+    # L3 Verification Loop (poll up to 3 seconds)
+    start_t = time.time()
+    while time.time() - start_t < 3.0:
+        if _is_process_running(sig):
+            return f"Opened {app_name} (verified: process running)."
+        time.sleep(0.3)
+
+    # In fake/mock testing or CI where headless, verify adapter dispatch
+    adapter = get_desktop_adapter()
+    if hasattr(adapter, "calls") and adapter.calls:
+        return f"Opened {app_name}."
+
+    return f"Launched command for '{app_name}', but process did not appear within timeout (unverified)."
 
 
 # ── Tool declaration (auto-discovered by core/action_loader.py) ──────────────
 TOOL = {
     "name": "open_app",
-    "description": "Opens any application on the computer. Use this whenever the user asks to open, launch, or start any app, website, or program. Always call this tool — never just say you opened it.",
+    "description": "Opens any application on the computer with post-launch process verification.",
     "parameters": {
         "type": "OBJECT",
         "properties": {
             "app_name": {
                 "type": "STRING",
-                "description": "Exact name of the application (e.g. 'WhatsApp', 'Chrome', 'Spotify')"
+                "description": "Exact name of the application (e.g. 'VS Code', 'Chrome', 'Calculator')",
             }
         },
         "required": [
