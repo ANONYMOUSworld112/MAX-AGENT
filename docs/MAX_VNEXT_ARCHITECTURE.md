@@ -333,8 +333,8 @@ The implementation follows the 13 gated phases specified in [MAX_AGENT_MASTER_IM
 - **Phase 4 — Coding Workflow:** ✅ Complete. `CodingExecutor` protocol, `WorktreeSandbox` isolation, `LocalDevWorker`, independent `TestVerifier` with weakening detection, `actions/dev_agent.py` deprecated. 206 tests passing.
 - **Phase 5 — Scheduler & Resource Leases:** ✅ Complete. `TaskScheduler` with SQLite WAL persistence, injectable Clock, RFC 5545 recurrence engine, priority aging, DST handling, misfire policies, `LockManager` shared/exclusive resource leases, and concurrent `TaskGraphDispatcher`. 226 tests passing.
 - **Phase 6 — Memory & Context Hardening:** ✅ Complete. Provenance gating preventing memory poisoning, task-scoped `ContextEngine` with token budget enforcement, non-destructive SQLite `StateDB` migration and indexed queries. 237 tests passing.
-- **Phase 7 — ProcessManager & Security:** 🔄 Next. Sandboxed process tree, credential protection, network isolation.
-- **Phase 8 — Verification Engine:** Multi-method verification, self-correction, failure recovery.
+- **Phase 7 — ProcessManager & Security:** ✅ Complete. Windows Job Objects kernel process tree termination, dashboard network hardening to `127.0.0.1` with token auth and DNS rebinding / CSWSH protection, UAC firewall removal, and credential sanitizer. 255 tests passing.
+- **Phase 8 — Verification Engine:** 🔄 Next. Multi-method verification, self-correction, failure recovery.
 - **Phase 9 — Provider Abstraction:** Local ONNX / cloud model routing, offline resilience.
 - **Phase 10 — Advanced Capabilities:** RSVP speed reader, voice streaming, browser automation.
 - **Phase 11 — Observability & Dashboard:** Real-time HUD progress widget, authenticated API.
