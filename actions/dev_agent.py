@@ -1,4 +1,10 @@
-﻿import subprocess
+"""[DEPRECATED] actions/dev_agent.py
+
+Superseded by core/coding/local_dev_worker.py (Phase 4).
+Retained for backwards compatibility with legacy action loader.
+"""
+
+import subprocess
 import sys
 import json
 import re

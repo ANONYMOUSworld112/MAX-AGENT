@@ -299,8 +299,8 @@ The HUD and dashboard subscribe to the `EventBus` stream. They display task stat
 | **Deterministic Router** | `agents/router.py` | ✅ Complete (Task 2.3) — 5-step routing pipeline, circuit breaker fallback, RoutingDecision audit emission (9 tests) |
 | **Task Graph** | `core/task_graph.py` | ✅ Complete (Task 2.4) — DAG data structure with topological execution, cycle detection, budget checks (10 tests) |
 | **Desktop Automation** | `actions/desktop.py`, `core/adapters/` | ✅ Complete (Phase 3) — `exec()` RCE eliminated, WindowsDesktopAdapter + UIA semantic targeting, ApplicationRegistry + L3 verification, UserActivityMonitor (21 tests) |
-| **Coding Workflow** | `agents/software/coding_agent.py` | 🔄 Phase 4 — OpenCode worker with workspace path allowlist |
-| **Deterministic Scheduler** | `core/scheduler.py` | ⏳ Phase 5 — Priority queue, aging, and resource leases |
+| **Coding Workflow** | `core/coding/`, `agents/software/coding_agent.py` | ✅ Complete (Phase 4) — `CodingExecutor` protocol, `WorktreeSandbox`, `LocalDevWorker`, independent `TestVerifier` (12 tests) |
+| **Deterministic Scheduler** | `core/scheduler.py` | 🔄 Phase 5 — Priority queue, aging, and resource leases |
 | **Memory Hardening** | `core/memory/` | ⏳ Phase 6 — Context budget, PII scrub, retrieval engine |
 | **Host Execution** | `core/process_manager.py` | ⏳ Phase 7 — Sandboxed process tree management & audit |
 | **Verification Engine** | `core/verification/` | ⏳ Phase 8 — Multi-method verification & self-correction |
@@ -330,8 +330,8 @@ The implementation follows the 13 gated phases specified in [MAX_AGENT_MASTER_IM
 - **Phase 1 — Foundations:** ✅ Complete. Contracts, 14-state machine, clock, events/audit, gateway, policy, banned imports test, mock agent purge. 127 tests passing.
 - **Phase 2 — Task Planning & Agent Routing:** ✅ Complete. `CapabilityRegistry`, `IntentEngine`, deterministic `AgentRouter`, `TaskGraph`. 173 tests passing. 100% route accuracy on golden benchmark.
 - **Phase 3 — Desktop Automation:** ✅ Complete. `exec()` RCE eliminated, `WindowsDesktopAdapter` with UIA semantic targeting, `FakeDesktopAdapter` test double, `ApplicationRegistry` with L3 post-launch verification, `UserActivityMonitor`. 194 tests passing.
-- **Phase 4 — Coding Workflow:** 🔄 Next. Workspace path containment, OpenCode worker adapter, test loop.
-- **Phase 5 — Scheduler & Resource Leases:** Deterministic scheduler, priority aging, deadlock prevention.
+- **Phase 4 — Coding Workflow:** ✅ Complete. `CodingExecutor` protocol, `WorktreeSandbox` isolation, `LocalDevWorker`, independent `TestVerifier` with weakening detection, `actions/dev_agent.py` deprecated. 206 tests passing.
+- **Phase 5 — Scheduler & Resource Leases:** 🔄 Next. Priority queue, aging, deadlock prevention.
 - **Phase 6 — Memory & Context Hardening:** 5-layer memory integrity, PII scrubbing, context compaction.
 - **Phase 7 — ProcessManager & Security:** Sandboxed process tree, credential protection, network isolation.
 - **Phase 8 — Verification Engine:** Multi-method verification, self-correction, failure recovery.

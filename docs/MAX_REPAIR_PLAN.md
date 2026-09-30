@@ -4,7 +4,7 @@
 
 The end-to-end target design is in [MAX_VNEXT_ARCHITECTURE.md](MAX_VNEXT_ARCHITECTURE.md).
 
-**Implementation status:** Phase 0 (Forensic Audit & Baseline), Phase 1 (Foundations & Architecture Core), Phase 2 (Task Planning & Deterministic Agent Routing), and Phase 3 (Desktop Automation & Application Launch Reliability) are complete and verified with 194 passing automated tests. All mock agent fakes are purged, single execution choke point is active, exec() RCE is eliminated, intent/agent routing operates deterministically at 100% accuracy on golden benchmark tasks, and desktop launches use L3 process/window verification. Phase 4 (Coding Workflow & OpenCode Worker) is next.
+**Implementation status:** Phase 0 (Forensic Audit & Baseline), Phase 1 (Foundations & Architecture Core), Phase 2 (Task Planning & Deterministic Agent Routing), Phase 3 (Desktop Automation & Application Launch Reliability), and Phase 4 (Coding Workflow & OpenCode Worker Adapter) are complete and verified with 206 passing automated tests. All mock agent fakes are purged, single execution choke point is active, exec() RCE is eliminated, intent/agent routing operates deterministically at 100% accuracy on golden benchmark tasks, desktop launches use L3 process/window verification, and sandboxed coding workflow operates within git worktree sandboxes with independent test verification. Phase 5 (Deterministic Scheduler & Resource Leases) is next.
 
 ## 1. Desired user-visible behavior
 
@@ -349,3 +349,48 @@ All desktop automation hardening, RCE elimination, semantic UIA targeting, guard
 ### Next Implementation Steps
 Phase 3 gate tagged `gate-p3-approved`. Development proceeds to:
 - **Phase 4:** Coding Workflow & OpenCode Worker Adapter (`agents/software/coding_agent.py`, workspace path confinement, headless git worktree, test verification loop).
+
+## 16. Phase 4 Coding Workflow & OpenCode Worker Adapter Status (2026-09-30)
+
+All sandboxed coding execution, worktree isolation, provider-agnostic worker protocols, and independent test verification loops defined in Phase 4 of [MAX_AGENT_MASTER_IMPLEMENTATION_PLAN.md](../MAX_AGENT_MASTER_IMPLEMENTATION_PLAN.md) are completed and validated on branch `max/p4-coding`.
+
+### Summary of Completed Phase 4 Deliverables
+
+| Task | Component | File | Verification |
+|:---|:---|:---|:---:|
+| **4.1** | CodingExecutor Protocol & Task Models | `core/coding/executor.py` | Provider-agnostic `CodingExecutor` protocol, `CodingTask`, and `CodingResult` dataclasses (`tests/unit/test_coding_executor.py`: 3 passed) |
+| **4.2** | Git Worktree Sandbox & Isolation | `core/coding/sandbox.py`, `core/adapters/git_adapter.py` | Isolated worktree creation, workspace boundary path enforcement, clean teardown (`tests/unit/test_sandbox.py`: 4 passed) |
+| **4.3** | Independent TestVerifier & Anti-Weakening Guard | `core/coding/test_verifier.py` | Independent test execution in sandbox, output parsing, anti-weakening detection guarding against deleted/weakened test assertions (`tests/unit/test_test_verifier.py`: 3 passed) |
+| **4.4** | LocalDevWorker Implementation | `core/coding/local_dev_worker.py` | Concrete `CodingExecutor` applying code modifications within worktree sandbox, executing test loop (`tests/unit/test_local_dev_worker.py`: 2 passed) |
+| **4.5** | Legacy Dev Agent Deprecation | `actions/dev_agent.py` | Marked deprecated, retained for backwards compatibility with legacy action loader |
+
+### Test Suite Summary: 206 Passing Tests
+```text
+============================= 206 passed in 8.59s =============================
+- tests/unit/test_contracts.py: 20 passed
+- tests/unit/test_state_machine.py: 27 passed
+- tests/unit/test_clock.py: 13 passed
+- tests/unit/test_events.py: 18 passed
+- tests/unit/test_gateway.py: 26 passed
+- tests/unit/test_capability_registry.py: 14 passed
+- tests/unit/test_intent_engine.py: 9 passed
+- tests/unit/test_plan_validator.py: 4 passed
+- tests/unit/test_agent_router.py: 9 passed
+- tests/unit/test_task_graph.py: 10 passed
+- tests/unit/test_desktop_no_exec.py: 6 passed
+- tests/unit/test_fake_desktop.py: 4 passed
+- tests/unit/test_app_launch.py: 6 passed
+- tests/unit/test_user_activity.py: 5 passed
+- tests/unit/test_coding_executor.py: 3 passed
+- tests/unit/test_sandbox.py: 4 passed
+- tests/unit/test_test_verifier.py: 3 passed
+- tests/unit/test_local_dev_worker.py: 2 passed
+- tests/tier0_characterization/: 21 passed
+- tests/test_banned_imports.py: 1 passed
+- tests/evals/test_eval_suite.py: 1 passed
+```
+
+### Next Implementation Steps
+Phase 4 gate tagged `gate-p4-approved`. Development proceeds to:
+- **Phase 5:** Deterministic Scheduler & Resource Leases (`core/scheduler.py`: Priority queue, aging to prevent starvation, Dijkstra sorted lock acquisition integration, resource lease timeouts).
+
