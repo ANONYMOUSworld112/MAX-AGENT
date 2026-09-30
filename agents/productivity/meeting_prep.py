@@ -19,22 +19,5 @@ class MeetingPrep(BaseAgent):
     permission_tier = 0  # Safe Read
 
     def _execute(self, input_data: AgentInput) -> AgentOutput:
-        desc = input_data.task_description
-        logger.info("MeetingPrep preparing for: %s", desc)
-
-        meeting_title = input_data.parameters.get("title", desc)
-        attendees: List[str] = input_data.parameters.get("attendees", ["Founder", "Stakeholders"])
-        agenda: List[str] = input_data.parameters.get("agenda", ["Status Update", "Architecture Decisions", "Next Steps"])
-
-        artifacts: Dict[str, Any] = {
-            "title": meeting_title,
-            "attendees": attendees,
-            "agenda": agenda,
-            "briefing_doc": f"# Briefing: {meeting_title}\n\n## Attendees: {', '.join(attendees)}\n\n## Agenda:\n" + "\n".join(f"- {a}" for a in agenda),
-        }
-
-        return AgentOutput(
-            success=True,
-            result=f"Meeting briefing prepared for '{meeting_title}' with {len(attendees)} attendees",
-            artifacts=artifacts,
-        )
+        """Not yet implemented (Rule 1-H1 Honesty)."""
+        raise NotImplementedError(f"Agent '{self.name}' is not implemented")

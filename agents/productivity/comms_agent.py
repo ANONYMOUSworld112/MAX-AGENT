@@ -19,24 +19,5 @@ class CommsAgent(BaseAgent):
     permission_tier = 2  # Requires Confirmation
 
     def _execute(self, input_data: AgentInput) -> AgentOutput:
-        desc = input_data.task_description
-        logger.info("CommsAgent dispatching: %s", desc)
-
-        platform = input_data.parameters.get("platform", "slack")
-        channel = input_data.parameters.get("channel", "general")
-        message = input_data.parameters.get("message", desc)
-        action = input_data.parameters.get("action", "send")
-
-        artifacts: Dict[str, Any] = {
-            "platform": platform,
-            "channel": channel,
-            "message": message,
-            "action": action,
-            "requires_confirmation": action == "send",
-        }
-
-        return AgentOutput(
-            success=True,
-            result=f"Comms message queued for {platform} #{channel}: '{message}'",
-            artifacts=artifacts,
-        )
+        """Not yet implemented (Rule 1-H1 Honesty)."""
+        raise NotImplementedError(f"Agent '{self.name}' is not implemented")

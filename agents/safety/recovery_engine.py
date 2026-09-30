@@ -38,26 +38,5 @@ class RecoveryEngine(BaseAgent):
     ]
 
     def _execute(self, input_data: AgentInput) -> AgentOutput:
-        desc = input_data.task_description
-        logger.info("RecoveryEngine handling failure: %s", desc)
-
-        failure_reason = input_data.parameters.get("error", desc)
-        attempt_count = input_data.parameters.get("attempt", 1)
-
-        # Select recovery step based on failure attempt
-        step_index = min(attempt_count - 1, len(self.RECOVERY_STEPS) - 1)
-        recommended_step = self.RECOVERY_STEPS[step_index]
-
-        artifacts: Dict[str, Any] = {
-            "failure_reason": failure_reason,
-            "attempt": attempt_count,
-            "recommended_step": recommended_step,
-            "pipeline_steps": self.RECOVERY_STEPS,
-            "escalate_to_user": recommended_step == "ask_user",
-        }
-
-        return AgentOutput(
-            success=True,
-            result=f"Recovery strategy for attempt {attempt_count}: '{recommended_step}'",
-            artifacts=artifacts,
-        )
+        """Not yet implemented (Rule 1-H1 Honesty)."""
+        raise NotImplementedError(f"Agent '{self.name}' is not implemented")

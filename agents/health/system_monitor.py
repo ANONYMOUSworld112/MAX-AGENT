@@ -20,28 +20,5 @@ class SystemMonitorAgent(BaseAgent):
     permission_tier = 0  # Safe Read
 
     def _execute(self, input_data: AgentInput) -> AgentOutput:
-        desc = input_data.task_description
-        logger.info("SystemMonitorAgent reading metrics: %s", desc)
-
-        metrics: Dict[str, Any] = {}
-        try:
-            from actions.system_monitor import get_system_status
-            metrics = get_system_status()
-        except Exception as exc:
-            logger.warning("Falling back to psutil for metrics: %s", exc)
-            import psutil
-            metrics = {
-                "cpu_percent": psutil.cpu_percent(interval=None),
-                "ram_percent": psutil.virtual_memory().percent,
-                "process_count": len(psutil.pids()),
-            }
-
-        cpu_val = metrics.get("cpu_percent", 0.0)
-        ram_val = metrics.get("ram_percent", 0.0)
-        summary = f"System Status: CPU {cpu_val}%, RAM {ram_val}%, Processes: {metrics.get('process_count', 0)}"
-
-        return AgentOutput(
-            success=True,
-            result=summary,
-            artifacts={"metrics": metrics},
-        )
+        """Not yet implemented (Rule 1-H1 Honesty)."""
+        raise NotImplementedError(f"Agent '{self.name}' is not implemented")

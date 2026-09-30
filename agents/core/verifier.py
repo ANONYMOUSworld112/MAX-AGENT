@@ -17,12 +17,5 @@ class ValidationVerifier(BaseAgent):
     permission_tier = 0
 
     def _execute(self, input_data: AgentInput) -> AgentOutput:
-        exit_code = input_data.parameters.get("exit_code", 0)
-        is_pass = exit_code == 0
-        verdict = "PASS" if is_pass else "FAIL"
-
-        return AgentOutput(
-            success=is_pass,
-            result=f"Validation verdict: {verdict}",
-            artifacts={"verdict": verdict, "exit_code": exit_code}
-        )
+        """Not yet implemented (Rule 1-H1 Honesty)."""
+        raise NotImplementedError(f"Agent '{self.name}' is not implemented")

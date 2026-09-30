@@ -19,20 +19,5 @@ class BrowserAgent(BaseAgent):
     permission_tier = 1  # Safe Write
 
     def _execute(self, input_data: AgentInput) -> AgentOutput:
-        desc = input_data.task_description
-        logger.info("BrowserAgent executing: %s", desc)
-
-        action = input_data.parameters.get("action", "navigate")
-        url = input_data.parameters.get("url", "https://google.com")
-
-        artifacts: Dict[str, Any] = {
-            "action": action,
-            "url": url,
-            "tab_status": "OPEN",
-        }
-
-        return AgentOutput(
-            success=True,
-            result=f"Browser action '{action}' executed for URL: {url}",
-            artifacts=artifacts,
-        )
+        """Not yet implemented (Rule 1-H1 Honesty)."""
+        raise NotImplementedError(f"Agent '{self.name}' is not implemented")

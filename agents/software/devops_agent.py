@@ -19,24 +19,5 @@ class DevOpsAgent(BaseAgent):
     permission_tier = 2  # Requires Confirmation
 
     def _execute(self, input_data: AgentInput) -> AgentOutput:
-        desc = input_data.task_description
-        logger.info("DevOpsAgent processing: %s", desc)
-
-        action = input_data.parameters.get("action", "generate_pipeline")
-        target_env = input_data.parameters.get("env", "staging")
-
-        artifacts: Dict[str, Any] = {
-            "action": action,
-            "target_env": target_env,
-            "requires_confirmation": True,
-            "spec": {
-                "ci_tool": "github_actions",
-                "steps": ["checkout", "setup-python", "install-deps", "run-tests", "build-artifact"],
-            },
-        }
-
-        return AgentOutput(
-            success=True,
-            result=f"DevOps pipeline prepared for environment '{target_env}' ({action})",
-            artifacts=artifacts,
-        )
+        """Not yet implemented (Rule 1-H1 Honesty)."""
+        raise NotImplementedError(f"Agent '{self.name}' is not implemented")

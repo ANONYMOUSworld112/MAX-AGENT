@@ -19,31 +19,5 @@ class UpdateAgent(BaseAgent):
     permission_tier = 2  # Requires Confirmation
 
     def _execute(self, input_data: AgentInput) -> AgentOutput:
-        desc = input_data.task_description
-        logger.info("UpdateAgent checking updates: %s", desc)
-
-        action = input_data.parameters.get("action", "check")
-        packages: List[str] = input_data.parameters.get("packages", ["pydantic", "pytest"])
-
-        available_updates = [
-            {"package": p, "current": "1.0.0", "latest": "1.1.0"}
-            for p in packages
-        ]
-
-        artifacts: Dict[str, Any] = {
-            "action": action,
-            "packages_checked": packages,
-            "available_updates": available_updates,
-            "requires_confirmation": True,
-        }
-
-        if action == "apply":
-            result = f"Update of {len(packages)} packages requires user confirmation gate"
-        else:
-            result = f"Update check complete: {len(available_updates)} updates available"
-
-        return AgentOutput(
-            success=True,
-            result=result,
-            artifacts=artifacts,
-        )
+        """Not yet implemented (Rule 1-H1 Honesty)."""
+        raise NotImplementedError(f"Agent '{self.name}' is not implemented")

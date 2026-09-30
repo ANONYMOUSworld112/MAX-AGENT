@@ -19,24 +19,5 @@ class CalendarAgent(BaseAgent):
     permission_tier = 1  # Safe Write
 
     def _execute(self, input_data: AgentInput) -> AgentOutput:
-        desc = input_data.task_description
-        logger.info("CalendarAgent managing event: %s", desc)
-
-        action = input_data.parameters.get("action", "schedule")
-        event_title = input_data.parameters.get("title", desc)
-        start_time = input_data.parameters.get("start_time", "2026-10-01T10:00:00")
-        duration = input_data.parameters.get("duration_minutes", 30)
-
-        artifacts: Dict[str, Any] = {
-            "action": action,
-            "title": event_title,
-            "start_time": start_time,
-            "duration_minutes": duration,
-            "status": "CONFIRMED",
-        }
-
-        return AgentOutput(
-            success=True,
-            result=f"Calendar event '{event_title}' scheduled for {start_time} ({duration} mins)",
-            artifacts=artifacts,
-        )
+        """Not yet implemented (Rule 1-H1 Honesty)."""
+        raise NotImplementedError(f"Agent '{self.name}' is not implemented")

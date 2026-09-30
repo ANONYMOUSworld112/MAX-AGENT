@@ -22,28 +22,5 @@ class FileOrganizer(BaseAgent):
     permission_tier = 1  # Safe Write
 
     def _execute(self, input_data: AgentInput) -> AgentOutput:
-        desc = input_data.task_description
-        logger.info("FileOrganizer executing: %s", desc)
-
-        action = input_data.parameters.get("action", "scan")
-        target_dir = input_data.parameters.get("directory", "")
-        file_map: List[Dict[str, str]] = []
-
-        if target_dir and os.path.exists(target_dir):
-            for root, _, files in os.walk(target_dir):
-                for f in files:
-                    ext = Path(f).suffix.lower()
-                    file_map.append({"filename": f, "path": os.path.join(root, f), "extension": ext})
-
-        artifacts: Dict[str, Any] = {
-            "action": action,
-            "target_dir": target_dir,
-            "matched_files": len(file_map),
-            "files": file_map[:50],
-        }
-
-        return AgentOutput(
-            success=True,
-            result=f"File organization '{action}' processed {len(file_map)} files in {target_dir or 'workspace'}",
-            artifacts=artifacts,
-        )
+        """Not yet implemented (Rule 1-H1 Honesty)."""
+        raise NotImplementedError(f"Agent '{self.name}' is not implemented")

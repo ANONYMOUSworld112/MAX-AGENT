@@ -25,30 +25,5 @@ class HealthCheck(BaseAgent):
         self.watchdog = watchdog or Watchdog()
 
     def _execute(self, input_data: AgentInput) -> AgentOutput:
-        desc = input_data.task_description
-        logger.info("HealthCheck validating system integrity: %s", desc)
-
-        kill_switch = KillSwitch.get_instance()
-        ks_ok = not kill_switch.is_tripped()
-
-        subsystem_status = {
-            "kill_switch": "OK" if ks_ok else "TRIPPED",
-            "circuit_breaker": "OK",
-            "watchdog": "ACTIVE",
-            "lock_manager": "OK",
-            "snapshot_engine": "OK",
-        }
-
-        all_healthy = ks_ok and all(v in ("OK", "ACTIVE") for v in subsystem_status.values())
-
-        artifacts: Dict[str, Any] = {
-            "subsystems": subsystem_status,
-            "overall_health": "HEALTHY" if all_healthy else "DEGRADED",
-            "healthy": all_healthy,
-        }
-
-        return AgentOutput(
-            success=all_healthy,
-            result=f"System health check: {'HEALTHY' if all_healthy else 'DEGRADED'}",
-            artifacts=artifacts,
-        )
+        """Not yet implemented (Rule 1-H1 Honesty)."""
+        raise NotImplementedError(f"Agent '{self.name}' is not implemented")

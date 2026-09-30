@@ -18,12 +18,5 @@ class MasterOrchestrator(BaseAgent):
     permission_tier = 0
 
     def _execute(self, input_data: AgentInput) -> AgentOutput:
-        logger.info("MasterOrchestrator coordinating task: %s", input_data.task_description)
-        return AgentOutput(
-            success=True,
-            result=f"Orchestration plan initialized for: {input_data.task_description}",
-            artifacts={
-                "strategy": "sequential_dag",
-                "status": "ready"
-            }
-        )
+        """Not yet implemented (Rule 1-H1 Honesty)."""
+        raise NotImplementedError(f"Agent '{self.name}' is not implemented")

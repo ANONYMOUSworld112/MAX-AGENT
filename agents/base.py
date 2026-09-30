@@ -59,10 +59,9 @@ class BaseAgent(ABC):
         self.snapshot_engine = snapshot_engine or SnapshotEngine()
         self.reconciliation_engine = reconciliation_engine or ReconciliationEngine()
 
-    @abstractmethod
     def _execute(self, input_data: AgentInput) -> AgentOutput:
         """Core specialized domain logic implemented by subclass."""
-        raise NotImplementedError
+        raise NotImplementedError(f"Agent '{self.name}' is not implemented")
 
     def run(self, input_data: AgentInput) -> AgentOutput:
         """Lifecycle envelope wrapping domain execution in deterministic guarantees."""
@@ -104,6 +103,8 @@ class BaseAgent(ABC):
                 self.circuit_breaker.record_success(self.name)
                 return output
 
+        except NotImplementedError:
+            raise
         except Exception as exc:
             logger.critical("Error during agent '%s' execution: %s", self.name, exc)
             self.circuit_breaker.record_failure(self.name)

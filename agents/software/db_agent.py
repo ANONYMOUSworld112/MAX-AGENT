@@ -19,30 +19,5 @@ class DBAgent(BaseAgent):
     permission_tier = 2  # Requires Confirmation
 
     def _execute(self, input_data: AgentInput) -> AgentOutput:
-        desc = input_data.task_description
-        logger.info("DBAgent processing schema/query task: %s", desc)
-
-        action = input_data.parameters.get("action", "migration")
-        table_name = input_data.parameters.get("table", "app_entity")
-
-        migration_sql = (
-            f"-- Migration generated for {desc}\n"
-            f"CREATE TABLE IF NOT EXISTS {table_name} (\n"
-            f"    id TEXT PRIMARY KEY,\n"
-            f"    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n"
-            f"    data TEXT\n"
-            f");"
-        )
-
-        artifacts: Dict[str, Any] = {
-            "action": action,
-            "table_name": table_name,
-            "sql": migration_sql,
-            "safety_verified": True,
-        }
-
-        return AgentOutput(
-            success=True,
-            result=f"Database schema/migration prepared for table '{table_name}'",
-            artifacts=artifacts,
-        )
+        """Not yet implemented (Rule 1-H1 Honesty)."""
+        raise NotImplementedError(f"Agent '{self.name}' is not implemented")

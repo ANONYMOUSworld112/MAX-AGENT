@@ -155,3 +155,35 @@ class StateDB:
                 (task_id,),
             )
             return [dict(row) for row in cursor.fetchall()]
+
+    # -------------------------------------------------------------
+    # Audit Log Operations
+    # -------------------------------------------------------------
+    def log_audit(
+        self,
+        event_type: str,
+        actor: str,
+        details: str = "",
+        prev_hash: str = "",
+        hash_val: str = "",
+    ) -> int:
+        with self._lock:
+            conn = self._get_connection()
+            with conn:
+                cursor = conn.execute(
+                    """
+                    INSERT INTO audit_log (event_type, actor, details, prev_hash, hash, timestamp)
+                    VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                    """,
+                    (event_type, actor, details, prev_hash, hash_val),
+                )
+                return cursor.lastrowid or 0
+
+    def get_audit_logs(self, limit: int = 100) -> List[Dict[str, Any]]:
+        with self._lock:
+            conn = self._get_connection()
+            cursor = conn.execute(
+                "SELECT * FROM audit_log ORDER BY id ASC LIMIT ?",
+                (limit,),
+            )
+            return [dict(row) for row in cursor.fetchall()]

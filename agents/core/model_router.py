@@ -17,16 +17,5 @@ class ModelRouter(BaseAgent):
     permission_tier = 0
 
     def _execute(self, input_data: AgentInput) -> AgentOutput:
-        desc = input_data.task_description.lower()
-        if "deep" in desc or "complex" in desc or "architect" in desc:
-            selected = "gemini-1.5-pro"
-        elif "local" in desc or "reflex" in desc:
-            selected = "laya-onnx-local"
-        else:
-            selected = "gemini-2.5-flash"
-
-        return AgentOutput(
-            success=True,
-            result=f"Selected model '{selected}' for task.",
-            artifacts={"selected_model": selected}
-        )
+        """Not yet implemented (Rule 1-H1 Honesty)."""
+        raise NotImplementedError(f"Agent '{self.name}' is not implemented")

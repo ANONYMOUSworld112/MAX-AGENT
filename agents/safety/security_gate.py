@@ -25,27 +25,5 @@ class SecurityGate(BaseAgent):
         self.guardrails = guardrails or ReflexGuardrails(fallback_mode=True)
 
     def _execute(self, input_data: AgentInput) -> AgentOutput:
-        desc = input_data.task_description
-        logger.info("SecurityGate evaluating: %s", desc)
-
-        guard_result = self.guardrails.check_safety(desc)
-
-        artifacts: Dict[str, Any] = {
-            "is_safe": guard_result.is_safe,
-            "risk_tier": int(guard_result.risk_tier),
-            "tier_name": guard_result.risk_tier.name,
-            "reason": guard_result.reason,
-        }
-
-        if guard_result.risk_tier == RiskTier.TIER_3_HARD_BLOCKED:
-            return AgentOutput(
-                success=False,
-                error=f"SECURITY_ALERT: Instruction blocked ({guard_result.reason})",
-                artifacts=artifacts,
-            )
-
-        return AgentOutput(
-            success=True,
-            result=f"Security assessment: {guard_result.risk_tier.name} (Safe={guard_result.is_safe})",
-            artifacts=artifacts,
-        )
+        """Not yet implemented (Rule 1-H1 Honesty)."""
+        raise NotImplementedError(f"Agent '{self.name}' is not implemented")

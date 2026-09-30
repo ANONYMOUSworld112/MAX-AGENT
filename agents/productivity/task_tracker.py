@@ -19,26 +19,5 @@ class TaskTracker(BaseAgent):
     permission_tier = 0  # Safe Read
 
     def _execute(self, input_data: AgentInput) -> AgentOutput:
-        desc = input_data.task_description
-        logger.info("TaskTracker executing: %s", desc)
-
-        action = input_data.parameters.get("action", "add")
-        task_name = input_data.parameters.get("task", desc)
-        priority = input_data.parameters.get("priority", "medium")
-
-        items: List[Dict[str, str]] = [
-            {"id": "t1", "task": task_name, "priority": priority, "status": "OPEN"}
-        ]
-
-        artifacts: Dict[str, Any] = {
-            "action": action,
-            "task": task_name,
-            "priority": priority,
-            "tasks": items,
-        }
-
-        return AgentOutput(
-            success=True,
-            result=f"Task tracked: '{task_name}' [Priority: {priority.upper()}]",
-            artifacts=artifacts,
-        )
+        """Not yet implemented (Rule 1-H1 Honesty)."""
+        raise NotImplementedError(f"Agent '{self.name}' is not implemented")

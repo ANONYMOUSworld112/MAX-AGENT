@@ -17,10 +17,5 @@ class AdversarialCritic(BaseAgent):
     permission_tier = 0
 
     def _execute(self, input_data: AgentInput) -> AgentOutput:
-        plan = input_data.parameters.get("plan", [])
-        critique = "Plan reviewed: verified absence of circular dependencies and destructive mutations."
-        return AgentOutput(
-            success=True,
-            result=critique,
-            artifacts={"critique": critique, "reviewed_steps": len(plan)}
-        )
+        """Not yet implemented (Rule 1-H1 Honesty)."""
+        raise NotImplementedError(f"Agent '{self.name}' is not implemented")

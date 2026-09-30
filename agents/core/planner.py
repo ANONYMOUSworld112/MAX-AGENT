@@ -18,19 +18,5 @@ class DecompositionPlanner(BaseAgent):
     permission_tier = 0
 
     def _execute(self, input_data: AgentInput) -> AgentOutput:
-        desc = input_data.task_description
-        logger.info("DecompositionPlanner planning for: %s", desc)
-
-        # Standard atomic decomposition template
-        subtasks = [
-            {"id": "step_1_spec", "agent": "SpecAuthor", "desc": f"Write spec for {desc}"},
-            {"id": "step_2_dev", "agent": "PolyglotDeveloper", "desc": f"Implement changes for {desc}"},
-            {"id": "step_3_review", "agent": "CodeReviewer", "desc": "Audit code quality and security"},
-            {"id": "step_4_test", "agent": "QATestEngineer", "desc": "Execute test suite"},
-        ]
-
-        return AgentOutput(
-            success=True,
-            result=f"Plan generated with {len(subtasks)} subtasks for: {desc}",
-            artifacts={"subtasks": subtasks}
-        )
+        """Not yet implemented (Rule 1-H1 Honesty)."""
+        raise NotImplementedError(f"Agent '{self.name}' is not implemented")
