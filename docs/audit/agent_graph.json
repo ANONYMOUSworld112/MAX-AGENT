@@ -1,0 +1,134 @@
+{
+  "graph_version": "1.0.0",
+  "audit_date": "2026-09-30",
+  "repository": "ANONYMOUSworld112/MAX-AGENT",
+  "commit": "877b913",
+  "nodes": [
+    {"id": "user", "type": "actor", "label": "User"},
+    {"id": "ui_hud", "type": "ui", "label": "MAXUI (PyQt6)", "file": "ui.py"},
+    {"id": "main_live", "type": "orchestrator", "label": "MaxLive", "file": "main.py"},
+    {"id": "gemini_live", "type": "external_model", "label": "Google Gemini 3.1 Flash Live", "model": "models/gemini-3.1-flash-live-preview"},
+    {"id": "tool_dispatcher", "type": "dispatcher", "label": "MaxLive._execute_tool", "file": "main.py", "line": 805},
+    {"id": "action_registry", "type": "registry", "label": "ActionRegistry", "file": "core/action_loader.py"},
+    {"id": "agent_registry", "type": "registry", "label": "AgentRegistry", "file": "agents/router.py"},
+    {"id": "plugin_registry", "type": "registry", "label": "PluginRegistry", "file": "core/plugin_loader.py"},
+    {"id": "reflex_router", "type": "router", "label": "ReflexIntentRouter (Fallback Only)", "file": "core/reflex/intent_router.py"},
+    {"id": "base_agent", "type": "envelope", "label": "BaseAgent.run", "file": "agents/base.py", "line": 67}
+  ],
+  "agents": [
+    {"name": "MasterOrchestrator", "cluster": "core", "file": "agents/core/orchestrator.py", "real": false},
+    {"name": "DecompositionPlanner", "cluster": "core", "file": "agents/core/planner.py", "real": false},
+    {"name": "ValidationVerifier", "cluster": "core", "file": "agents/core/verifier.py", "real": false},
+    {"name": "ModelRouter", "cluster": "core", "file": "agents/core/model_router.py", "real": false},
+    {"name": "AdversarialCritic", "cluster": "core", "file": "agents/core/critic.py", "real": false},
+    {"name": "CodingAgent", "cluster": "software", "file": "agents/software/coding_agent.py", "real": false},
+    {"name": "CodeReviewer", "cluster": "software", "file": "agents/software/code_reviewer.py", "real": false},
+    {"name": "TestWriter", "cluster": "software", "file": "agents/software/test_writer.py", "real": false},
+    {"name": "DevOpsAgent", "cluster": "software", "file": "agents/software/devops_agent.py", "real": false},
+    {"name": "DBAgent", "cluster": "software", "file": "agents/software/db_agent.py", "real": false},
+    {"name": "APIDesigner", "cluster": "software", "file": "agents/software/api_designer.py", "real": false},
+    {"name": "DocWriter", "cluster": "software", "file": "agents/software/doc_writer.py", "real": false},
+    {"name": "DependencyMgr", "cluster": "software", "file": "agents/software/dependency_mgr.py", "real": false},
+    {"name": "EmailAgent", "cluster": "productivity", "file": "agents/productivity/email_agent.py", "real": false},
+    {"name": "CalendarAgent", "cluster": "productivity", "file": "agents/productivity/calendar_agent.py", "real": false},
+    {"name": "CommsAgent", "cluster": "productivity", "file": "agents/productivity/comms_agent.py", "real": false},
+    {"name": "ResearchAgent", "cluster": "productivity", "file": "agents/productivity/research_agent.py", "real": false},
+    {"name": "FileOrganizer", "cluster": "productivity", "file": "agents/productivity/file_organizer.py", "real": false},
+    {"name": "NotesAgent", "cluster": "productivity", "file": "agents/productivity/notes_agent.py", "real": false},
+    {"name": "TaskTracker", "cluster": "productivity", "file": "agents/productivity/task_tracker.py", "real": false},
+    {"name": "MeetingPrep", "cluster": "productivity", "file": "agents/productivity/meeting_prep.py", "real": false},
+    {"name": "ComputerUseAgent", "cluster": "safety", "file": "agents/safety/computer_use.py", "real": false},
+    {"name": "DesktopAgent", "cluster": "safety", "file": "agents/safety/desktop_agent.py", "real": false},
+    {"name": "BrowserAgent", "cluster": "safety", "file": "agents/safety/browser_agent.py", "real": false},
+    {"name": "InputArbiter", "cluster": "safety", "file": "agents/safety/input_arbiter.py", "real": false},
+    {"name": "SecurityGate", "cluster": "safety", "file": "agents/safety/security_gate.py", "real": false},
+    {"name": "RecoveryEngine", "cluster": "safety", "file": "agents/safety/recovery_engine.py", "real": false},
+    {"name": "SystemMonitorAgent", "cluster": "health", "file": "agents/health/system_monitor.py", "real": false},
+    {"name": "NetworkAgent", "cluster": "health", "file": "agents/health/network_agent.py", "real": false},
+    {"name": "BackupAgent", "cluster": "health", "file": "agents/health/backup_agent.py", "real": false},
+    {"name": "UpdateAgent", "cluster": "health", "file": "agents/health/update_agent.py", "real": false},
+    {"name": "PerformanceAgent", "cluster": "health", "file": "agents/health/performance_agent.py", "real": false},
+    {"name": "HealthCheck", "cluster": "health", "file": "agents/health/health_check.py", "real": false}
+  ],
+  "edges": [
+    {
+      "source": "user",
+      "target": "main_live",
+      "trigger": "speech_or_text",
+      "channel": "mic_or_hud",
+      "file": "main.py",
+      "line": 999
+    },
+    {
+      "source": "main_live",
+      "target": "gemini_live",
+      "trigger": "realtime_websocket_stream",
+      "protocol": "gemini_live_websocket",
+      "file": "main.py",
+      "line": 988
+    },
+    {
+      "source": "gemini_live",
+      "target": "main_live",
+      "trigger": "response.tool_call",
+      "event": "function_call",
+      "file": "main.py",
+      "line": 1185
+    },
+    {
+      "source": "main_live",
+      "target": "tool_dispatcher",
+      "trigger": "dispatch_tool_call",
+      "file": "main.py",
+      "line": 1189
+    },
+    {
+      "source": "tool_dispatcher",
+      "target": "action_registry",
+      "trigger": "action_name_match",
+      "condition": "self._action_registry.has(name)",
+      "file": "main.py",
+      "line": 915
+    },
+    {
+      "source": "tool_dispatcher",
+      "target": "agent_registry",
+      "trigger": "agent_name_match",
+      "condition": "self._agent_registry.get(name) is not None",
+      "file": "main.py",
+      "line": 932
+    },
+    {
+      "source": "tool_dispatcher",
+      "target": "plugin_registry",
+      "trigger": "plugin_name_match",
+      "condition": "self._plugin_registry.has(name)",
+      "file": "main.py",
+      "line": 943
+    },
+    {
+      "source": "tool_dispatcher",
+      "target": "reflex_router",
+      "trigger": "unknown_tool_fallback",
+      "condition": "all_registries_miss",
+      "file": "main.py",
+      "line": 953
+    },
+    {
+      "source": "agent_registry",
+      "target": "base_agent",
+      "trigger": "agent_execution_invocation",
+      "call": "agent.run(agent_input)",
+      "file": "main.py",
+      "line": 940
+    },
+    {
+      "source": "base_agent",
+      "target": "agents",
+      "trigger": "domain_execution",
+      "call": "Subclass._execute(input_data)",
+      "file": "agents/base.py",
+      "line": 96
+    }
+  ]
+}

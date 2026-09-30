@@ -29,30 +29,56 @@
 
 ## 2. Phase 0 Deliverables & Forensic Accomplishments
 
-### Completed in Phase 0:
+### Completed in Phase 0 (Forensic Audit & Baseline):
 - [x] Full forensic inspection of `main.py`, `ui.py`, `agents/`, `core/`, `actions/`, `memory/`, `dashboard/`, `plugins/`, `config/`, `IMPLEMENTATION_PLAN.md`, `requirements.txt`, `setup.py`, `pyproject.toml`, and `readme.md`.
-- [x] Uncovered the discrepancy between synthetic claims in `IMPLEMENTATION_PLAN.md` (which claimed 74 tests passing) and repository reality (zero test files existed).
-- [x] Discovered direct unchoked side-effect execution across 16 modules, including `exec()` in `actions/desktop.py` and `0.0.0.0` binding in `dashboard/server.py`.
-- [x] Authored `docs/ARCHITECTURE_REAL.md` capturing the real dual runtime vs inactive infrastructure.
-- [x] Authored `docs/EXECUTION_FLOW.md` tracing 6 input channels across the 13 mandatory lifecycle stages.
-- [x] Authored `docs/COMPONENT_MAP.md` mapping all 20 Section 6 target components to existing code ([EXISTING], [REPLACE], [NEW]).
-- [x] Authored `docs/CONFLICT_LOG.md` recording 9 structural and architectural conflicts between existing plans/code and Master Spec v2.
-- [x] Authored `docs/THREAT_MODEL.md` evaluating the 7 threat classes of Section 5 against the current codebase.
-- [x] Authored `docs/UNCHOKED_SIDE_EFFECTS.md` cataloging 37 specific unchoked execution call sites as input to the Phase 1 `ExecutionGateway`.
-- [x] Authored and ran Tier 0 Characterization Tests (`tests/tier0_characterization/` with 21 tests) covering action loader, confirm/undo, memory/config, max_infra (lock manager, task queue, state db, kill switch, circuit breaker, data boundary, verification engine), reflex engine, agent registry, app normalization, and dashboard crypto.
-- [x] Verified 21/21 tests passing in 1.09s and saved test execution output to `docs/evidence/p0/tier0_test_run.txt`.
-- [x] Ensured zero production code changes were made during Phase 0 (pure forensic baseline).
+- [x] Authored complete audit suite in `docs/audit/`:
+  - `docs/audit/ARCHITECTURE_REAL.md` (Dual-architecture analysis: active Gemini Live vs dormant kernel)
+  - `docs/audit/EXECUTION_FLOW.md` (7 input channels traced across 13 lifecycle stages)
+  - `docs/audit/AGENT_INVOCATION_GRAPH.md` & `docs/audit/agent_graph.json` (Real agent graph, 0 delegation)
+  - `docs/audit/AGENT_REGISTRY_AUDIT.md` (Forensic audit of all 33 agents across 5 clusters)
+  - `docs/audit/AGENT_ASSIGNMENT.md` (LLM tool selection vs Reflex fallback analysis)
+  - `docs/audit/PROMPT_FORENSICS.md` (Prompt sites, context injection, and prompt injection attack surfaces)
+  - `docs/audit/TOOL_FORENSICS.md` (60+ tools audited: inline, actions, agents, schemas, risks)
+  - `docs/audit/TASK_LIFECYCLE.md` (10-state FSM vs real ephemeral lifecycle; persistence gaps)
+  - `docs/audit/CONCURRENCY.md` (Threading, asyncio, LockManager analysis, race conditions)
+  - `docs/audit/DESKTOP_AUTOMATION.md` (App launch, blind Windows Search, `exec()` in desktop.py)
+  - `docs/audit/CODING_WORKFLOW.md` (dev_agent.py, host pip install, OpenCode absence)
+  - `docs/audit/MEMORY.md` (long_term.json, prompt injection, memory poisoning risks)
+  - `docs/audit/VERIFICATION.md` (L0-L3 verification analysis, false success claims)
+  - `docs/audit/FAILURE_RECOVERY.md` (Error classification, undo stack, recovery gaps)
+  - `docs/audit/SECURITY.md` (37 unchoked side effects, RCE, plaintext keys, LAN exposure)
+  - `docs/audit/OBSERVABILITY.md` (Current telemetry vs unified correlation tracing)
+  - `docs/audit/DEAD_ARCHITECTURE.md` (Inventory of dead, dormant, and duplicated modules)
+- [x] Authored complete evolution benchmark suite in `docs/evolution/`:
+  - `docs/evolution/CODEX_COMPARISON.md` (Comparison against modern agent harness principles)
+  - `docs/evolution/CLAUDE_STYLE_COMPARISON.md` (Comparison against Claude-style agent patterns)
+  - `docs/evolution/OPENCODE_COMPARISON.md` (CodingExecutor abstraction & sandboxed OpenCode)
+  - `docs/evolution/IMPROVEMENT_MATRIX.md` (32-area prioritized improvement matrix)
+  - `docs/evolution/MAX_VNEXT.md` (Future target architecture and 5 engineering pillars)
+  - `docs/evolution/ROADMAP.md` (10-phase prioritized evolution roadmap)
+- [x] Built real evaluation harness & golden dataset in `tests/evals/`:
+  - `tests/evals/golden_tasks.json` (25 representative tasks across all domains)
+  - `tests/evals/harness.py` (Evaluation harness measuring route, verification, and false-success)
+  - `tests/evals/test_eval_suite.py` (Pytest test suite producing empirical baseline)
+  - Empirical baseline saved to `docs/evidence/p0/evals_baseline.json`:
+    - Routing accuracy: **76.0%**
+    - Verified success rate: **8.0%**
+    - False success rate: **56.0%**
+    - Multi-task support rate: **0.0%**
+- [x] Authored and ran Tier 0 Characterization Tests (`tests/tier0_characterization/` with 21 tests):
+  - 22/22 total automated tests passing in 1.89s.
+  - Ensured zero production code changes were made during Phase 0 (pure forensic baseline).
 
 ---
 
 ## 3. Evidence Paths
 
 - **Tier 0 Test Run Evidence**: [`docs/evidence/p0/tier0_test_run.txt`](file:///f:/MAX-AGENT/docs/evidence/p0/tier0_test_run.txt)
-- **Real Architecture**: [`docs/ARCHITECTURE_REAL.md`](file:///f:/MAX-AGENT/docs/ARCHITECTURE_REAL.md)
-- **Execution Flow**: [`docs/EXECUTION_FLOW.md`](file:///f:/MAX-AGENT/docs/EXECUTION_FLOW.md)
+- **Evaluation Baseline Evidence**: [`docs/evidence/p0/evals_baseline.json`](file:///f:/MAX-AGENT/docs/evidence/p0/evals_baseline.json)
+- **Full Audit Directory**: [`docs/audit/`](file:///f:/MAX-AGENT/docs/audit)
+- **Evolution Benchmark Directory**: [`docs/evolution/`](file:///f:/MAX-AGENT/docs/evolution)
 - **Component Map**: [`docs/COMPONENT_MAP.md`](file:///f:/MAX-AGENT/docs/COMPONENT_MAP.md)
 - **Conflict Log**: [`docs/CONFLICT_LOG.md`](file:///f:/MAX-AGENT/docs/CONFLICT_LOG.md)
-- **Threat Model**: [`docs/THREAT_MODEL.md`](file:///f:/MAX-AGENT/docs/THREAT_MODEL.md)
 - **Unchoked Side Effects**: [`docs/UNCHOKED_SIDE_EFFECTS.md`](file:///f:/MAX-AGENT/docs/UNCHOKED_SIDE_EFFECTS.md)
 
 ---
