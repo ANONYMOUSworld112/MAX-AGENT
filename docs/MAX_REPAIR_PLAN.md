@@ -4,7 +4,7 @@
 
 The end-to-end target design is in [MAX_VNEXT_ARCHITECTURE.md](MAX_VNEXT_ARCHITECTURE.md).
 
-**Implementation status:** Phase 0 (Forensic Audit & Baseline), Phase 1 (Foundations & Architecture Core), Phase 2 (Task Planning & Deterministic Agent Routing), Phase 3 (Desktop Automation & Application Launch Reliability), Phase 4 (Coding Workflow & OpenCode Worker Adapter), and Phase 5 (Unified Scheduler & Resource Leases) are complete and verified with 226 passing automated tests. All mock agent fakes are purged, single execution choke point is active, exec() RCE is eliminated, intent/agent routing operates deterministically at 100% accuracy on golden benchmark tasks, desktop launches use L3 process/window verification, sandboxed coding workflow operates within git worktree sandboxes with independent test verification, and deterministic scheduler provides SQLite WAL persistence, RFC 5545 recurrence, priority aging, Dijkstra-ordered resource leases, and concurrent TaskGraph dispatch. Phase 6 (Memory Hardening & Scoped Context Packages) is next.
+**Implementation status:** Phase 0 (Forensic Audit & Baseline), Phase 1 (Foundations & Architecture Core), Phase 2 (Task Planning & Deterministic Agent Routing), Phase 3 (Desktop Automation & Application Launch Reliability), Phase 4 (Coding Workflow & OpenCode Worker Adapter), Phase 5 (Unified Scheduler & Resource Leases), and Phase 6 (Memory Hardening & Scoped Context Packages) are complete and verified with 237 passing automated tests. All mock agent fakes are purged, single execution choke point is active, exec() RCE is eliminated, intent/agent routing operates deterministically at 100% accuracy on golden benchmark tasks, desktop launches use L3 process/window verification, sandboxed coding workflow operates within git worktree sandboxes with independent test verification, deterministic scheduler provides SQLite WAL persistence, RFC 5545 recurrence, priority aging, Dijkstra-ordered resource leases, and concurrent TaskGraph dispatch, and memory hardening provides provenance-gated writes (TRUSTED/UNTRUSTED), token-budgeted ContextEngine, and non-destructive SQLite StateDB memory layers. Phase 7 (ProcessManager & Security Hardening) is next.
 
 ## 1. Desired user-visible behavior
 
@@ -438,5 +438,54 @@ All transactional scheduling, SQLite WAL persistence, RFC 5545 recurrence, prior
 ### Next Implementation Steps
 Phase 5 gate tagged `gate-p5-approved`. Development proceeds to:
 - **Phase 6:** Memory Hardening & Scoped Context Packages (`memory/memory_manager.py` provenance-gated writes, `core/context_engine.py` token-budgeted context packages, SQLite backing).
+
+## 18. Phase 6 Memory Hardening & Scoped Context Packages Status (2026-09-30)
+
+All memory provenance gating, sensitive category protection, task-scoped context packaging with strict token budget enforcement, and non-destructive SQLite `StateDB` memory layers migration defined in Phase 6 of [MAX_AGENT_MASTER_IMPLEMENTATION_PLAN.md](../MAX_AGENT_MASTER_IMPLEMENTATION_PLAN.md) are completed and validated on branch `max/p6-memory`.
+
+### Summary of Completed Phase 6 Deliverables
+
+| Task | Component | File | Verification |
+|:---|:---|:---|:---:|
+| **6.1** | Provenance-Gated Memory Writes | `memory/memory_manager.py` | `MemoryOrigin` (TRUSTED/UNTRUSTED), sensitive categories (`identity`, `preferences`) protected against indirect prompt injection, deletion gating (`tests/unit/test_memory_provenance.py`: 5 passed) |
+| **6.2** | Scoped Context Packages & Token Budget | `core/context_engine.py` | `ContextEngine` keyword relevance matching against `TaskIntent`, strict token budget enforcement, automatic pruning of lowest-priority memories, identity preservation (`tests/unit/test_context_engine.py`: 3 passed) |
+| **6.3** | Structured Memory Schema with SQLite Backing | `memory/memory_manager.py`, `core/max_infra/state_db.py` | `memory_layers` CRUD operations, indexed keyword search, non-destructive migration from `long_term.json`, JSON export round-trip (`tests/unit/test_memory_schema.py`: 3 passed) |
+
+### Test Suite Summary: 237 Passing Tests
+```text
+============================= 237 passed in 12.32s =============================
+- tests/unit/test_contracts.py: 20 passed
+- tests/unit/test_state_machine.py: 27 passed
+- tests/unit/test_clock.py: 13 passed
+- tests/unit/test_events.py: 18 passed
+- tests/unit/test_gateway.py: 26 passed
+- tests/unit/test_capability_registry.py: 14 passed
+- tests/unit/test_intent_engine.py: 9 passed
+- tests/unit/test_plan_validator.py: 4 passed
+- tests/unit/test_agent_router.py: 9 passed
+- tests/unit/test_task_graph.py: 10 passed
+- tests/unit/test_desktop_no_exec.py: 6 passed
+- tests/unit/test_fake_desktop.py: 4 passed
+- tests/unit/test_app_launch.py: 6 passed
+- tests/unit/test_user_activity.py: 5 passed
+- tests/unit/test_coding_executor.py: 3 passed
+- tests/unit/test_sandbox.py: 4 passed
+- tests/unit/test_test_verifier.py: 3 passed
+- tests/unit/test_local_dev_worker.py: 2 passed
+- tests/unit/test_resource_leases.py: 7 passed
+- tests/unit/test_scheduler.py: 9 passed
+- tests/unit/test_concurrent_dispatch.py: 4 passed
+- tests/unit/test_memory_provenance.py: 5 passed
+- tests/unit/test_context_engine.py: 3 passed
+- tests/unit/test_memory_schema.py: 3 passed
+- tests/tier0_characterization/: 21 passed
+- tests/test_banned_imports.py: 1 passed
+- tests/evals/test_eval_suite.py: 1 passed
+```
+
+### Next Implementation Steps
+Phase 6 gate tagged `gate-p6-approved`. Development proceeds to:
+- **Phase 7:** ProcessManager & Security Hardening (`core/process_manager.py`: Windows Job Objects, clean process tree termination, dashboard network hardening to 127.0.0.1 with token auth).
+
 
 

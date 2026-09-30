@@ -4,6 +4,7 @@ from datetime import datetime
 from threading import Lock
 from pathlib import Path
 import sys
+from typing import Any, Dict, List, Optional, Tuple
 
 
 def get_base_dir() -> Path:
@@ -133,7 +134,25 @@ def _truncate_value(val: str) -> str:
     return val
 
 
-def _recursive_update(target: dict, updates: dict) -> bool:
+class MemoryOrigin:
+    TRUSTED = "TRUSTED"
+    UNTRUSTED = "UNTRUSTED"
+
+
+SENSITIVE_CATEGORIES = {"identity", "preferences"}
+
+CATEGORY_TO_LAYER = {
+    "identity": 1,
+    "preferences": 2,
+    "behavioral": 3,
+    "projects": 4,
+    "relationships": 5,
+    "wishes": 5,
+    "notes": 5,
+}
+
+
+def _recursive_update(target: dict, updates: dict, origin: str = MemoryOrigin.TRUSTED) -> bool:
     changed = False
     for key, value in updates.items():
         if value is None:
@@ -144,11 +163,15 @@ def _recursive_update(target: dict, updates: dict) -> bool:
             if key not in target or not isinstance(target[key], dict):
                 target[key] = {}
                 changed = True
-            if _recursive_update(target[key], value):
+            if _recursive_update(target[key], value, origin=origin):
                 changed = True
         else:
             new_val  = _truncate_value(str(value["value"] if isinstance(value, dict) else value))
-            entry    = {"value": new_val, "updated": datetime.now().strftime("%Y-%m-%d")}
+            entry    = {
+                "value": new_val,
+                "updated": datetime.now().strftime("%Y-%m-%d"),
+                "origin": origin,
+            }
             existing = target.get(key, {})
             if not isinstance(existing, dict) or existing.get("value") != new_val:
                 target[key] = entry
@@ -156,14 +179,95 @@ def _recursive_update(target: dict, updates: dict) -> bool:
     return changed
 
 
-def update_memory(memory_update: dict) -> dict:
+def update_memory(memory_update: dict, origin: str = MemoryOrigin.TRUSTED) -> dict:
     if not isinstance(memory_update, dict) or not memory_update:
         return load_memory()
+
+    # Provenance gating: reject untrusted writes to sensitive categories
+    origin_str = str(origin).upper().strip()
+    if origin_str == MemoryOrigin.UNTRUSTED or "UNTRUSTED" in origin_str:
+        for cat in memory_update.keys():
+            if cat in SENSITIVE_CATEGORIES:
+                raise PermissionError(
+                    f"Untrusted origin cannot modify sensitive memory category '{cat}'."
+                )
+
     memory = load_memory()
-    if _recursive_update(memory, memory_update):
+    if _recursive_update(memory, memory_update, origin=origin):
         save_memory(memory)
-        print(f"[Memory] 💾 Saved: {list(memory_update.keys())}")
+        print(f"[Memory] 💾 Saved ({origin}): {list(memory_update.keys())}")
     return memory
+
+
+def delete_memory_entry(category: str, key: str, origin: str = MemoryOrigin.TRUSTED) -> bool:
+    """Deletes a specific memory entry with provenance gating."""
+    origin_str = str(origin).upper().strip()
+    if (origin_str == MemoryOrigin.UNTRUSTED or "UNTRUSTED" in origin_str) and category in SENSITIVE_CATEGORIES:
+        raise PermissionError(
+            f"Untrusted origin cannot delete sensitive memory category '{category}'."
+        )
+    memory = load_memory()
+    if category in memory and isinstance(memory[category], dict):
+        if key in memory[category]:
+            del memory[category][key]
+            save_memory(memory)
+            return True
+    return False
+
+
+def migrate_json_to_sqlite(json_path: Path, state_db: Any) -> int:
+    """Non-destructively migrates flat JSON memory store to StateDB SQLite schema."""
+    if not json_path.exists():
+        return 0
+    try:
+        data = json.loads(json_path.read_text(encoding="utf-8"))
+    except Exception as e:
+        print(f"[Memory] Migration read error: {e}")
+        return 0
+
+    count = 0
+    for cat, items in data.items():
+        if not isinstance(items, dict):
+            continue
+        layer = CATEGORY_TO_LAYER.get(cat, 5)
+        for key, entry in items.items():
+            if isinstance(entry, dict):
+                val = entry.get("value", "")
+                meta = {
+                    "category": cat,
+                    "updated": entry.get("updated", ""),
+                    "origin": entry.get("origin", MemoryOrigin.TRUSTED),
+                }
+            else:
+                val = str(entry)
+                meta = {"category": cat, "origin": MemoryOrigin.TRUSTED}
+            state_db.set_memory(layer=layer, key=key, value=val, metadata=meta)
+            count += 1
+    return count
+
+
+def export_sqlite_to_json(state_db: Any, target_json_path: Optional[Path] = None) -> dict:
+    """Exports SQLite memory_layers back to structured JSON format."""
+    records = state_db.get_all_memories()
+    out = _empty_memory()
+    layer_to_cat = {1: "identity", 2: "preferences", 3: "behavioral", 4: "projects", 5: "notes"}
+    for rec in records:
+        layer = rec["layer"]
+        key = rec["key"]
+        val = rec["value"]
+        meta = rec.get("metadata", {})
+        cat = meta.get("category") or layer_to_cat.get(layer, "notes")
+        if cat not in out:
+            out[cat] = {}
+        out[cat][key] = {
+            "value": val,
+            "updated": meta.get("updated", datetime.now().strftime("%Y-%m-%d")),
+            "origin": meta.get("origin", MemoryOrigin.TRUSTED),
+        }
+    if target_json_path:
+        target_json_path.parent.mkdir(parents=True, exist_ok=True)
+        target_json_path.write_text(json.dumps(out, indent=2, ensure_ascii=False), encoding="utf-8")
+    return out
 
 def _entry_value(entry) -> str:
     """Accept both the {'value': ..., 'updated': ...} shape and a bare string,

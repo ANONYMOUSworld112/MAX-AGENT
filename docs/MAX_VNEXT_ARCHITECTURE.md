@@ -301,8 +301,8 @@ The HUD and dashboard subscribe to the `EventBus` stream. They display task stat
 | **Desktop Automation** | `actions/desktop.py`, `core/adapters/` | ✅ Complete (Phase 3) — `exec()` RCE eliminated, WindowsDesktopAdapter + UIA semantic targeting, ApplicationRegistry + L3 verification, UserActivityMonitor (21 tests) |
 | **Coding Workflow** | `core/coding/`, `agents/software/coding_agent.py` | ✅ Complete (Phase 4) — `CodingExecutor` protocol, `WorktreeSandbox`, `LocalDevWorker`, independent `TestVerifier` (12 tests) |
 | **Deterministic Scheduler** | `core/scheduler.py` | ✅ Complete (Phase 5) — Priority aging, RFC 5545 RRULE recurrence, restart recovery, TaskGraph parallel dispatch, Dijkstra sorted resource leases (20 tests) |
-| **Memory Hardening** | `core/memory/` | 🔄 Phase 6 — Context budget, PII scrub, retrieval engine |
-| **Host Execution** | `core/process_manager.py` | ⏳ Phase 7 — Sandboxed process tree management & audit |
+| **Memory Hardening** | `memory/memory_manager.py`, `core/context_engine.py` | ✅ Complete (Phase 6) — Provenance-gated writes (TRUSTED/UNTRUSTED), token-budgeted ContextEngine, SQLite StateDB memory_layers (11 tests) |
+| **Host Execution** | `core/process_manager.py` | 🔄 Phase 7 — Sandboxed process tree management & audit |
 | **Verification Engine** | `core/verification/` | ⏳ Phase 8 — Multi-method verification & self-correction |
 
 ## 9. Ten daily-life acceptance scenarios
@@ -332,8 +332,8 @@ The implementation follows the 13 gated phases specified in [MAX_AGENT_MASTER_IM
 - **Phase 3 — Desktop Automation:** ✅ Complete. `exec()` RCE eliminated, `WindowsDesktopAdapter` with UIA semantic targeting, `FakeDesktopAdapter` test double, `ApplicationRegistry` with L3 post-launch verification, `UserActivityMonitor`. 194 tests passing.
 - **Phase 4 — Coding Workflow:** ✅ Complete. `CodingExecutor` protocol, `WorktreeSandbox` isolation, `LocalDevWorker`, independent `TestVerifier` with weakening detection, `actions/dev_agent.py` deprecated. 206 tests passing.
 - **Phase 5 — Scheduler & Resource Leases:** ✅ Complete. `TaskScheduler` with SQLite WAL persistence, injectable Clock, RFC 5545 recurrence engine, priority aging, DST handling, misfire policies, `LockManager` shared/exclusive resource leases, and concurrent `TaskGraphDispatcher`. 226 tests passing.
-- **Phase 6 — Memory & Context Hardening:** 🔄 Next. 5-layer memory integrity, PII scrubbing, context compaction.
-- **Phase 7 — ProcessManager & Security:** Sandboxed process tree, credential protection, network isolation.
+- **Phase 6 — Memory & Context Hardening:** ✅ Complete. Provenance gating preventing memory poisoning, task-scoped `ContextEngine` with token budget enforcement, non-destructive SQLite `StateDB` migration and indexed queries. 237 tests passing.
+- **Phase 7 — ProcessManager & Security:** 🔄 Next. Sandboxed process tree, credential protection, network isolation.
 - **Phase 8 — Verification Engine:** Multi-method verification, self-correction, failure recovery.
 - **Phase 9 — Provider Abstraction:** Local ONNX / cloud model routing, offline resilience.
 - **Phase 10 — Advanced Capabilities:** RSVP speed reader, voice streaming, browser automation.

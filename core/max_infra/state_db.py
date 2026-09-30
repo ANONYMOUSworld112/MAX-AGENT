@@ -187,3 +187,102 @@ class StateDB:
                 (limit,),
             )
             return [dict(row) for row in cursor.fetchall()]
+
+    # -------------------------------------------------------------
+    # Memory Layer Operations (Phase 6)
+    # -------------------------------------------------------------
+    def set_memory(
+        self,
+        layer: int,
+        key: str,
+        value: str,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        with self._lock:
+            conn = self._get_connection()
+            meta_str = json.dumps(metadata or {})
+            with conn:
+                conn.execute(
+                    """
+                    INSERT INTO memory_layers (layer, key, value, metadata_json, updated_at)
+                    VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+                    ON CONFLICT(layer, key) DO UPDATE SET
+                        value = excluded.value,
+                        metadata_json = excluded.metadata_json,
+                        updated_at = CURRENT_TIMESTAMP
+                    """,
+                    (layer, key, value, meta_str),
+                )
+
+    def get_memory(self, layer: int, key: str) -> Optional[Dict[str, Any]]:
+        with self._lock:
+            conn = self._get_connection()
+            cur = conn.execute(
+                "SELECT * FROM memory_layers WHERE layer = ? AND key = ?",
+                (layer, key),
+            )
+            row = cur.fetchone()
+            if row:
+                d = dict(row)
+                d["metadata"] = json.loads(d.get("metadata_json") or "{}")
+                return d
+            return None
+
+    def get_memories_by_layer(self, layer: int) -> List[Dict[str, Any]]:
+        with self._lock:
+            conn = self._get_connection()
+            cur = conn.execute(
+                "SELECT * FROM memory_layers WHERE layer = ? ORDER BY updated_at DESC",
+                (layer,),
+            )
+            results = []
+            for row in cur.fetchall():
+                d = dict(row)
+                d["metadata"] = json.loads(d.get("metadata_json") or "{}")
+                results.append(d)
+            return results
+
+    def search_memories(self, query: str, layer: Optional[int] = None) -> List[Dict[str, Any]]:
+        with self._lock:
+            conn = self._get_connection()
+            pattern = f"%{query}%"
+            if layer is not None:
+                cur = conn.execute(
+                    "SELECT * FROM memory_layers WHERE layer = ? AND (key LIKE ? OR value LIKE ?) ORDER BY updated_at DESC",
+                    (layer, pattern, pattern),
+                )
+            else:
+                cur = conn.execute(
+                    "SELECT * FROM memory_layers WHERE key LIKE ? OR value LIKE ? ORDER BY updated_at DESC",
+                    (pattern, pattern),
+                )
+            results = []
+            for row in cur.fetchall():
+                d = dict(row)
+                d["metadata"] = json.loads(d.get("metadata_json") or "{}")
+                results.append(d)
+            return results
+
+    def delete_memory(self, layer: int, key: str) -> bool:
+        with self._lock:
+            conn = self._get_connection()
+            with conn:
+                cur = conn.execute(
+                    "DELETE FROM memory_layers WHERE layer = ? AND key = ?",
+                    (layer, key),
+                )
+                return cur.rowcount > 0
+
+    def get_all_memories(self) -> List[Dict[str, Any]]:
+        with self._lock:
+            conn = self._get_connection()
+            cur = conn.execute(
+                "SELECT * FROM memory_layers ORDER BY layer ASC, updated_at DESC"
+            )
+            results = []
+            for row in cur.fetchall():
+                d = dict(row)
+                d["metadata"] = json.loads(d.get("metadata_json") or "{}")
+                results.append(d)
+            return results
+
