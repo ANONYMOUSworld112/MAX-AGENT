@@ -294,11 +294,11 @@ The HUD and dashboard subscribe to the `EventBus` stream. They display task stat
 | **Policy Engine** | `core/policy.py` | ✅ Complete (Task 1.5) — Risk tiers, channel trust, confirmation matrix |
 | **Import Scanner** | `tests/test_banned_imports.py` | ✅ Complete (Task 1.6) — AST scanner enforcing adapter boundary |
 | **Mock Agents** | `agents/` (all 33 agents) | ✅ Complete (Task 1.7) — Fake success purged; raise `NotImplementedError` |
-| **Capability Registry** | `core/capability_registry.py` | 🔄 Phase 2 (Task 2.1) — Parameter schemas, resources, idempotency, risk, verifiers |
-| **Intent Engine** | `core/intent_engine.py`, `core/plan_validator.py` | 🔄 Phase 2 (Task 2.2) — Schema-constrained fast path + full path task decomposition |
-| **Deterministic Router** | `agents/router.py` | 🔄 Phase 2 (Task 2.3) — 5-step routing algorithm producing `RoutingDecision` |
-| **Task Graph** | `core/task_graph.py` | 🔄 Phase 2 (Task 2.4) — DAG data structure with topological execution |
-| **Desktop Automation** | `actions/desktop.py`, `core/adapters/` | ⏳ Phase 3 — Eliminate `exec()` RCE; Windows UI Automation adapter |
+| **Capability Registry** | `core/capability_registry.py` | ✅ Complete (Task 2.1) — Parameter schemas, resources, idempotency, risk, verifiers (14 tests) |
+| **Intent Engine** | `core/intent_engine.py`, `core/plan_validator.py` | ✅ Complete (Task 2.2) — Fast-path parsing & compound DAG decomposition; 100% golden route accuracy (13 tests) |
+| **Deterministic Router** | `agents/router.py` | ✅ Complete (Task 2.3) — 5-step routing pipeline, circuit breaker fallback, RoutingDecision audit emission (9 tests) |
+| **Task Graph** | `core/task_graph.py` | ✅ Complete (Task 2.4) — DAG data structure with topological execution, cycle detection, budget checks (10 tests) |
+| **Desktop Automation** | `actions/desktop.py`, `core/adapters/` | 🔄 Phase 3 — Eliminate `exec()` RCE; Windows UI Automation adapter |
 | **Coding Workflow** | `agents/software/coding_agent.py` | ⏳ Phase 4 — OpenCode worker with workspace path allowlist |
 | **Deterministic Scheduler** | `core/scheduler.py` | ⏳ Phase 5 — Priority queue, aging, and resource leases |
 | **Memory Hardening** | `core/memory/` | ⏳ Phase 6 — Context budget, PII scrub, retrieval engine |
@@ -328,8 +328,8 @@ The implementation follows the 13 gated phases specified in [MAX_AGENT_MASTER_IM
 
 - **Phase 0 — Forensic Audit & Baseline:** ✅ Complete. 18 audit docs, 6 evolution benchmarks, 25-task baseline evaluation, 21 characterization tests.
 - **Phase 1 — Foundations:** ✅ Complete. Contracts, 14-state machine, clock, events/audit, gateway, policy, banned imports test, mock agent purge. 127 tests passing.
-- **Phase 2 — Task Planning & Agent Routing:** 🔄 Active. `CapabilityRegistry`, `IntentEngine`, deterministic `AgentRouter`, `TaskGraph`.
-- **Phase 3 — Desktop Automation:** Eliminate `exec()` RCE, Windows UI Automation adapter, app launch reliability.
+- **Phase 2 — Task Planning & Agent Routing:** ✅ Complete. `CapabilityRegistry`, `IntentEngine`, deterministic `AgentRouter`, `TaskGraph`. 173 tests passing. 100% route accuracy on golden benchmark.
+- **Phase 3 — Desktop Automation:** 🔄 Next. Eliminate `exec()` RCE, Windows UI Automation adapter, app launch reliability.
 - **Phase 4 — Coding Workflow:** Workspace path containment, OpenCode worker adapter, test loop.
 - **Phase 5 — Scheduler & Resource Leases:** Deterministic scheduler, priority aging, deadlock prevention.
 - **Phase 6 — Memory & Context Hardening:** 5-layer memory integrity, PII scrubbing, context compaction.
