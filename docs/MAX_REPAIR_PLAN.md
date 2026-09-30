@@ -4,7 +4,7 @@
 
 The end-to-end target design is in [MAX_VNEXT_ARCHITECTURE.md](MAX_VNEXT_ARCHITECTURE.md).
 
-**Implementation status:** Phase 0 (Forensic Audit & Baseline), Phase 1 (Foundations & Architecture Core), Phase 2 (Task Planning & Deterministic Agent Routing), Phase 3 (Desktop Automation & Application Launch Reliability), Phase 4 (Coding Workflow & OpenCode Worker Adapter), Phase 5 (Unified Scheduler & Resource Leases), and Phase 6 (Memory Hardening & Scoped Context Packages) are complete and verified with 237 passing automated tests. All mock agent fakes are purged, single execution choke point is active, exec() RCE is eliminated, intent/agent routing operates deterministically at 100% accuracy on golden benchmark tasks, desktop launches use L3 process/window verification, sandboxed coding workflow operates within git worktree sandboxes with independent test verification, deterministic scheduler provides SQLite WAL persistence, RFC 5545 recurrence, priority aging, Dijkstra-ordered resource leases, and concurrent TaskGraph dispatch, and memory hardening provides provenance-gated writes (TRUSTED/UNTRUSTED), token-budgeted ContextEngine, and non-destructive SQLite StateDB memory layers. Phase 7 (ProcessManager & Security Hardening) is next.
+**Implementation status:** Phase 0 (Forensic Audit & Baseline), Phase 1 (Foundations & Architecture Core), Phase 2 (Task Planning & Deterministic Agent Routing), Phase 3 (Desktop Automation & Application Launch Reliability), Phase 4 (Coding Workflow & OpenCode Worker Adapter), Phase 5 (Unified Scheduler & Resource Leases), Phase 6 (Memory Hardening & Scoped Context Packages), Phase 7 (ProcessManager & Security Hardening), Phase 8 (Verification Engine & Multi-Tier Verification Hierarchy), Phase 9 (Provider Abstraction & Offline Resilience), and Phase 10 (Advanced Capabilities & Modular Skills) are complete and verified with 283 passing automated tests. All mock agent fakes are purged, single execution choke point is active, exec() RCE is eliminated, intent/agent routing operates deterministically at 100% accuracy on golden benchmark tasks, desktop launches use L3 process/window verification, sandboxed coding workflow operates within git worktree sandboxes with independent test verification, deterministic scheduler provides SQLite WAL persistence, RFC 5545 recurrence, priority aging, Dijkstra-ordered resource leases, and concurrent TaskGraph dispatch, memory hardening provides provenance-gated writes (TRUSTED/UNTRUSTED), token-budgeted ContextEngine, and non-destructive SQLite StateDB memory layers, Windows Job Objects manage process tree terminations, dashboard binds securely to 127.0.0.1 with CSWSH protection and credential sanitization, multi-tier L0-L3 verifiers with self-correction/rollback handle task reliability, unified LLM providers support Gemini, Ollama, and Mock with privacy-enforced model routing, and modular skill packaging with lifecycle hooks and real domain workers (Calendar, Reminder, Media) deliver robust execution. Phase 11 (Observability & HUD Dashboard API) is next.
 
 ## 1. Desired user-visible behavior
 
@@ -645,7 +645,67 @@ All provider abstraction protocols, standardized completion responses, live avai
 
 ### Next Implementation Steps
 Phase 9 gate tagged `gate-p9-approved`. Development proceeds to:
-- **Phase 10:** Advanced Capabilities (RSVP speed reader, voice streaming, browser automation).
+- **Phase 10:** Advanced Capabilities (Modular skill packages, lifecycle hooks, real domain workers: Calendar, Reminder, Media).
+
+## 22. Phase 10 Advanced Capabilities Status (2026-09-30)
+
+All modular skill packaging, priority-ordered lifecycle hooks with error isolation, and production-grade domain workers (Calendar, Reminder, Media) defined in Phase 10 of [MAX_AGENT_MASTER_IMPLEMENTATION_PLAN.md](../MAX_AGENT_MASTER_IMPLEMENTATION_PLAN.md) are completed and validated on branch `max/p10-advanced`.
+
+### Summary of Completed Phase 10 Deliverables
+
+| Task | Component | File | Verification |
+|:---|:---|:---|:---:|
+| **10.1** | Modular Skill Loader & Registry | `core/skill_loader.py`, `skills/open_application/SKILL.md`, `skills/play_music/SKILL.md` | Declarative `SKILL.md` markdown packages with YAML frontmatter, parameter schema validation, dependency checks, and gateway dispatch with verification criteria injection (`tests/unit/test_skill_loader.py`: 2 passed) |
+| **10.2** | Lifecycle Hooks Architecture | `core/hooks.py` | Priority-ordered lifecycle execution (`before_task`, `after_task`, `before_tool`, `after_tool`, `on_failure`, `on_verification`), exception isolation ensuring hook errors do not abort task execution, and `MetricsCollectorHook` execution tracking (`tests/unit/test_hooks.py`: 3 passed) |
+| **10.3** | Domain Worker Integrations | `workers/calendar_worker.py`, `workers/reminder_worker.py`, `workers/media_worker.py` | SQLite-backed `CalendarWorker` with half-open interval conflict detection and RFC 5545 events; SQLite-backed `ReminderWorker` with prioritization, due queries, and snoozing; `MediaWorker` session state transitions, track playback, and volume control (`tests/unit/test_real_workers.py`: 3 passed) |
+
+### Test Suite Summary: 283 Passing Tests
+```text
+============================= 283 passed in 18.46s =============================
+- tests/unit/test_contracts.py: 20 passed
+- tests/unit/test_state_machine.py: 27 passed
+- tests/unit/test_clock.py: 13 passed
+- tests/unit/test_events.py: 18 passed
+- tests/unit/test_gateway.py: 26 passed
+- tests/unit/test_capability_registry.py: 14 passed
+- tests/unit/test_intent_engine.py: 9 passed
+- tests/unit/test_plan_validator.py: 4 passed
+- tests/unit/test_agent_router.py: 9 passed
+- tests/unit/test_task_graph.py: 10 passed
+- tests/unit/test_desktop_no_exec.py: 6 passed
+- tests/unit/test_fake_desktop.py: 4 passed
+- tests/unit/test_app_launch.py: 6 passed
+- tests/unit/test_user_activity.py: 5 passed
+- tests/unit/test_coding_executor.py: 3 passed
+- tests/unit/test_sandbox.py: 4 passed
+- tests/unit/test_test_verifier.py: 3 passed
+- tests/unit/test_local_dev_worker.py: 2 passed
+- tests/unit/test_resource_leases.py: 7 passed
+- tests/unit/test_scheduler.py: 9 passed
+- tests/unit/test_concurrent_dispatch.py: 4 passed
+- tests/unit/test_memory_provenance.py: 5 passed
+- tests/unit/test_context_engine.py: 3 passed
+- tests/unit/test_memory_schema.py: 3 passed
+- tests/unit/test_process_manager.py: 4 passed
+- tests/unit/test_dashboard_security.py: 7 passed
+- tests/unit/test_sanitizer.py: 7 passed
+- tests/unit/test_verification_engine.py: 6 passed
+- tests/unit/test_recovery.py: 3 passed
+- tests/unit/test_self_correction.py: 3 passed
+- tests/unit/test_providers.py: 3 passed
+- tests/unit/test_model_router.py: 5 passed
+- tests/unit/test_skill_loader.py: 2 passed
+- tests/unit/test_hooks.py: 3 passed
+- tests/unit/test_real_workers.py: 3 passed
+- tests/tier0_characterization/: 21 passed
+- tests/test_banned_imports.py: 1 passed
+- tests/evals/test_eval_suite.py: 1 passed
+```
+
+### Next Implementation Steps
+Phase 10 gate tagged `gate-p10-approved`. Development proceeds to:
+- **Phase 11:** Observability & HUD Dashboard API (`ui/components/task_progress_widget.py`, WebSocket/EventBus task progress stream).
+
 
 
 

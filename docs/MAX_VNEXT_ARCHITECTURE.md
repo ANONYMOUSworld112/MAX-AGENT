@@ -1,6 +1,6 @@
 # MAX vNext — End-to-End Architecture and Implementation Plan
 
-**Status:** Under Active Implementation (Phase 0 and Phase 1 completed, 127 automated tests passing). This document describes the target architecture and contracts operationalized in [MAX_AGENT_MASTER_IMPLEMENTATION_PLAN.md](../MAX_AGENT_MASTER_IMPLEMENTATION_PLAN.md) and governed by the Master Engineering Specification v2.
+**Status:** Under Active Implementation (Phases 0 through 10 completed, 283 automated tests passing). This document describes the target architecture and contracts operationalized in [MAX_AGENT_MASTER_IMPLEMENTATION_PLAN.md](../MAX_AGENT_MASTER_IMPLEMENTATION_PLAN.md) and governed by the Master Engineering Specification v2.
 
 **Scope:** End-to-end target architecture, core contracts, lifecycle state machine, policy gate, and staged execution roadmap. Phase 0 (Forensic Audit & Baseline) and Phase 1 (Foundations: Contracts, State Machine, Clock, Events/Audit, ExecutionGateway, PolicyEngine, Mock Agent Honesty Purge) are fully implemented and verified.
 
@@ -302,8 +302,12 @@ The HUD and dashboard subscribe to the `EventBus` stream. They display task stat
 | **Coding Workflow** | `core/coding/`, `agents/software/coding_agent.py` | ✅ Complete (Phase 4) — `CodingExecutor` protocol, `WorktreeSandbox`, `LocalDevWorker`, independent `TestVerifier` (12 tests) |
 | **Deterministic Scheduler** | `core/scheduler.py` | ✅ Complete (Phase 5) — Priority aging, RFC 5545 RRULE recurrence, restart recovery, TaskGraph parallel dispatch, Dijkstra sorted resource leases (20 tests) |
 | **Memory Hardening** | `memory/memory_manager.py`, `core/context_engine.py` | ✅ Complete (Phase 6) — Provenance-gated writes (TRUSTED/UNTRUSTED), token-budgeted ContextEngine, SQLite StateDB memory_layers (11 tests) |
-| **Host Execution** | `core/process_manager.py` | 🔄 Phase 7 — Sandboxed process tree management & audit |
-| **Verification Engine** | `core/verification/` | ⏳ Phase 8 — Multi-method verification & self-correction |
+| **Host Execution** | `core/process_manager.py` | ✅ Complete (Phase 7) — Windows Job Objects process tree management, 127.0.0.1 token auth dashboard, credential sanitization (18 tests) |
+| **Verification Engine** | `core/verification/`, `core/recovery_engine.py` | ✅ Complete (Phase 8) — L0-L3 verification hierarchy, polling verifiers, gateway verification gate, self-correction & rollback (12 tests) |
+| **Provider Abstraction** | `core/providers/` | ✅ Complete (Phase 9) — LLMProvider protocol, Gemini cloud, Ollama local, MockProvider, privacy-preserving ModelRouter (8 tests) |
+| **Advanced Capabilities** | `core/skill_loader.py`, `core/hooks.py`, `workers/` | ✅ Complete (Phase 10) — Declarative SKILL.md packages, priority lifecycle hooks, Calendar/Reminder/Media workers (8 tests) |
+| **Observability & HUD** | `ui/components/`, `dashboard/` | 🔄 Phase 11 — Real-time HUD progress widget, authenticated API |
+| **Final Acceptance** | `tests/evals/` | ⏳ Phase 12 — Full 25-task golden benchmark re-test, ≥80% verified success rate |
 
 ## 9. Ten daily-life acceptance scenarios
 
@@ -336,8 +340,8 @@ The implementation follows the 13 gated phases specified in [MAX_AGENT_MASTER_IM
 - **Phase 7 — ProcessManager & Security:** ✅ Complete. Windows Job Objects kernel process tree termination, dashboard network hardening to `127.0.0.1` with token auth and DNS rebinding / CSWSH protection, UAC firewall removal, and credential sanitizer. 255 tests passing.
 - **Phase 8 — Verification Engine:** ✅ Complete. L0-L3 hierarchical verification, poll_until polling, gateway post-execution verification gate, ErrorClass classification, bounded retry with backoff, git checkpoint rollback, and self-correction loop. 267 tests passing.
 - **Phase 9 — Provider Abstraction:** ✅ Complete. Universal `LLMProvider` protocol, standardized `LLMResponse`, Google Gemini cloud integration, local Ollama inference, deterministic `MockProvider`, and `ModelRouter` with strict privacy and complexity routing. 275 tests passing.
-- **Phase 10 — Advanced Capabilities:** 🔄 Next. RSVP speed reader, voice streaming, browser automation.
-- **Phase 11 — Observability & Dashboard:** Real-time HUD progress widget, authenticated API.
+- **Phase 10 — Advanced Capabilities:** ✅ Complete. Declarative `SKILL.md` modular packages, priority-ordered lifecycle hooks with error isolation, real domain workers (Calendar, Reminder, Media). 283 tests passing.
+- **Phase 11 — Observability & Dashboard:** 🔄 Next. Real-time HUD progress widget, authenticated API.
 - **Phase 12 — Final Acceptance:** Full 25-task golden benchmark re-test, ≥80% verified success rate.
 
 ## 11. Definition of done
