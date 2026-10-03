@@ -35,6 +35,9 @@
 **CyberBlack AI-agent MAX** is a real-time, voice-first autonomous desktop operating environment powered by **Gemini 3.1 Flash Live**, the **LAYA Reflex Engine**, and the **MAX OS Kernel**. It transforms standard personal computers into intelligent, proactive, self-healing workstations.
 
 Unlike conventional chatbots or brittle desktop scripts, CyberBlack AI-agent MAX operates as a fault-tolerant **33-Agent Swarm** that perceives screen state, reasons over multi-step workflows, acquires deadlock-free resource locks, captures copy-on-write snapshots, executes autonomous code and desktop actions, and deterministically reconciles real operating system truth before marking any task as complete.
+
+> 📘 **Master System Compendium**: For an exhaustive, 0% to 100% deep-dive into every capability, architectural transformation, empirical benchmark, and operational telemetry query, see [**FULL_SYSTEM_CAPABILITIES.md**](FULL_SYSTEM_CAPABILITIES.md).
+
 ---
 
 ## ⚡ Step-by-Step Quick Start
