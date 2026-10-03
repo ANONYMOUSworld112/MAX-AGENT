@@ -1,6 +1,5 @@
-"""UI Components for CyberBlack AI-agent MAX HUD."""
-
-# pyrefly: ignore [missing-import]
 from .task_list_widget import TaskListWidget
+from .task_progress_widget import TaskProgressWidget, TaskProgressItemWidget
 
-__all__ = ["TaskListWidget"]
+__all__ = ["TaskListWidget", "TaskProgressWidget", "TaskProgressItemWidget"]
+

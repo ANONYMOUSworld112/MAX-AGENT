@@ -143,3 +143,15 @@ class MetricsCollectorHook:
         reg.register(HookPoint.BEFORE_TOOL, self.before_tool, name="metrics.before_tool")
         reg.register(HookPoint.AFTER_TOOL, self.after_tool, name="metrics.after_tool")
         reg.register(HookPoint.ON_VERIFICATION, self.on_verification, name="metrics.on_verification")
+
+    def get_metrics(self) -> dict[str, int]:
+        return {
+            "task_starts": self.task_starts,
+            "task_completions": self.task_completions,
+            "tool_calls": self.tool_calls,
+            "tool_failures": self.tool_failures,
+            "verification_failures": self.verification_failures,
+        }
+
+
+LifecycleHookRegistry = HookRegistry

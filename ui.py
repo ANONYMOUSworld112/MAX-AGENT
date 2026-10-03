@@ -50,6 +50,19 @@ def _base_dir() -> Path:
         return Path(sys.executable).parent
     return Path(__file__).resolve().parent
 
+
+def _load_nvml():
+    try:
+        import nvidia_ml_py as pynvml  # type: ignore
+        return pynvml
+    except Exception:
+        try:
+            import pynvml  # type: ignore
+            return pynvml
+        except Exception:
+            return None
+
+
 BASE_DIR   = _base_dir()
 CONFIG_DIR = BASE_DIR / "config"
 API_FILE   = CONFIG_DIR / "api_keys.json"
@@ -281,13 +294,14 @@ class _SysMetrics:
         # retrying pynvml entirely once it proves unavailable here.
         if self._pynvml_ok is not False:
             try:
-                if self._pynvml_h is None:
-                    import pynvml  # type: ignore
-                    pynvml.nvmlInit()
-                    self._pynvml    = pynvml
-                    self._pynvml_h  = pynvml.nvmlDeviceGetHandleByIndex(0)
-                    self._pynvml_ok = True
-                return float(self._pynvml.nvmlDeviceGetUtilizationRates(self._pynvml_h).gpu)
+                self._pynvml = self._pynvml or _load_nvml()
+                if self._pynvml is not None:
+                    if self._pynvml_h is None:
+                        self._pynvml.nvmlInit()
+                        self._pynvml_h = self._pynvml.nvmlDeviceGetHandleByIndex(0)
+                        self._pynvml_ok = True
+                    return float(self._pynvml.nvmlDeviceGetUtilizationRates(self._pynvml_h).gpu)
+                self._pynvml_ok = False
             except Exception:
                 self._pynvml_ok = False
 

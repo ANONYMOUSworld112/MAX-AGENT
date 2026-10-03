@@ -15,8 +15,10 @@ import re
 import secrets
 import socket
 import string
+import threading
 import time
 from pathlib import Path
+from typing import Any
 
 _DEPS_OK = False
 try:
@@ -156,11 +158,26 @@ def _read(name: str) -> str:
 
 class DashboardServer:
 
-    def __init__(self, port: int = PORT, host: str = "127.0.0.1", token: str | None = None):
+    def __init__(
+        self,
+        port: int = PORT,
+        host: str = "127.0.0.1",
+        token: str | None = None,
+        rate_limit_per_minute: int = 120,
+        scheduler: Any = None,
+        hooks: Any = None,
+    ):
         self.port                         = port
         self.host                         = host
         self._ip                          = host if host != "0.0.0.0" else _local_ip()
         self.auth_token                   = token or secrets.token_urlsafe(32)
+        self.rate_limit_per_minute        = rate_limit_per_minute
+        self.scheduler                    = scheduler
+        self.hooks                        = hooks
+        self._tasks: dict[str, dict]      = {}
+        self._rate_limits: dict[str, list[float]] = {}
+        self._rate_limit_lock             = threading.Lock()
+        self._start_time                  = time.time()
         self._tokens: set[str]            = {self.auth_token}
         self._token_keys: dict[str, str]  = {}   # auth_token → session_key
         self._aes_cache:  dict[str, bytes]= {}   # session_key → AES bytes
@@ -176,6 +193,10 @@ class DashboardServer:
         self._login_html                  = _read("login.html")
         self._app_html                    = _read("app.html")
         self.app                          = self._build_app()
+
+    def register_task(self, task_id: str, task_dict: dict) -> None:
+        """Register or mirror a task dictionary for dashboard visibility."""
+        self._tasks[task_id] = task_dict
 
     # ── one-time key management ───────────────────────────────────────────
 
@@ -276,6 +297,35 @@ class DashboardServer:
             response.headers["X-Content-Type-Options"] = "nosniff"
             response.headers["X-Frame-Options"] = "DENY"
             return response
+
+        @app.middleware("http")
+        async def rate_limiting_middleware(request: Request, call_next):
+            path = request.url.path
+            # Exclude health check and static assets from rate limiting
+            if path in ("/api/health", "/login", "/static/crypto.js") or path.startswith("/static/"):
+                return await call_next(request)
+
+            client_host = getattr(request.client, "host", "127.0.0.1") if request.client else "127.0.0.1"
+            auth_header = request.headers.get("authorization", "") or request.headers.get("x-max-token", "")
+            key = f"{client_host}:{auth_header}"
+
+            now = time.time()
+            with self._rate_limit_lock:
+                timestamps = self._rate_limits.setdefault(key, [])
+                window = 60.0
+                cutoff = now - window
+                valid = [ts for ts in timestamps if ts > cutoff]
+                if len(valid) >= self.rate_limit_per_minute:
+                    retry_after = max(1, int(window - (now - valid[0])) + 1)
+                    return JSONResponse(
+                        {"error": "Rate limit exceeded", "retry_after": retry_after},
+                        status_code=429,
+                        headers={"Retry-After": str(retry_after)},
+                    )
+                valid.append(now)
+                self._rate_limits[key] = valid
+
+            return await call_next(request)
 
         def _auth(req: Request) -> bool:
             tok = req.headers.get("authorization", "").removeprefix("Bearer ").strip()
@@ -558,7 +608,9 @@ class DashboardServer:
             return FileResponse(str(path), filename=safe)
 
         @app.get("/api/agents")
-        async def list_agents():
+        async def list_agents(req: Request):
+            if not _auth(req):
+                return JSONResponse({"error": "Unauthorized"}, status_code=401)
             from agents.router import AgentRegistry
             reg = AgentRegistry.get_instance()
             agents_info = [
@@ -570,6 +622,45 @@ class DashboardServer:
                 for a in reg.list_all()
             ]
             return JSONResponse({"agents": agents_info, "count": len(agents_info)})
+
+        @app.get("/api/tasks")
+        async def list_tasks(req: Request):
+            if not _auth(req):
+                return JSONResponse({"error": "Unauthorized"}, status_code=401)
+            if self.scheduler is not None and hasattr(self.scheduler, "list_tasks"):
+                tasks = [
+                    t.to_dict() if hasattr(t, "to_dict") else dict(t)
+                    for t in self.scheduler.list_tasks()
+                ]
+            else:
+                tasks = list(self._tasks.values())
+            return JSONResponse({"tasks": tasks, "count": len(tasks)})
+
+        @app.get("/api/tasks/{task_id}")
+        async def get_task(task_id: str, req: Request):
+            if not _auth(req):
+                return JSONResponse({"error": "Unauthorized"}, status_code=401)
+            if self.scheduler is not None and hasattr(self.scheduler, "get_task"):
+                task = self.scheduler.get_task(task_id)
+                if task:
+                    return JSONResponse({"task": task.to_dict() if hasattr(task, "to_dict") else dict(task)})
+            elif task_id in self._tasks:
+                return JSONResponse({"task": self._tasks[task_id]})
+            return JSONResponse({"error": f"Task {task_id} not found"}, status_code=404)
+
+        @app.get("/api/metrics")
+        async def get_metrics(req: Request):
+            if not _auth(req):
+                return JSONResponse({"error": "Unauthorized"}, status_code=401)
+            metrics_data: dict[str, Any] = {
+                "active_clients": len(self._clients),
+                "history_count": len(self._history),
+                "active_devices": len(self._device_sessions),
+                "uptime_seconds": time.time() - self._start_time,
+            }
+            if self.hooks is not None and hasattr(self.hooks, "get_metrics"):
+                metrics_data["hooks"] = self.hooks.get_metrics()
+            return JSONResponse({"metrics": metrics_data})
 
         @app.websocket("/ws")
         async def ws_ep(websocket: WebSocket, token: str = ""):

@@ -21,9 +21,38 @@ from typing import Dict, List, Optional
 logger = logging.getLogger("max.infra.snapshot")
 
 
+def _repo_root() -> Path:
+    return Path(__file__).resolve().parents[2]
+
+
+def _resolve_snapshot_dir(base_snapshot_dir: str | Path | None) -> Path:
+    if base_snapshot_dir is not None:
+        candidate = Path(base_snapshot_dir)
+        if not candidate.is_absolute():
+            candidate = _repo_root() / candidate
+        return candidate
+
+    candidates = [
+        _repo_root() / ".snapshots",
+        Path.home() / ".max-agent" / "snapshots",
+        Path.home() / ".snapshots",
+    ]
+
+    for candidate in candidates:
+        try:
+            candidate.mkdir(parents=True, exist_ok=True)
+            return candidate
+        except OSError:
+            continue
+
+    fallback = Path.home() / ".max-agent" / "snapshots"
+    fallback.mkdir(parents=True, exist_ok=True)
+    return fallback
+
+
 class SnapshotEngine:
-    def __init__(self, base_snapshot_dir: str | Path = ".snapshots") -> None:
-        self.base_dir = Path(base_snapshot_dir)
+    def __init__(self, base_snapshot_dir: str | Path | None = None) -> None:
+        self.base_dir = _resolve_snapshot_dir(base_snapshot_dir)
         self.base_dir.mkdir(parents=True, exist_ok=True)
 
     def _hash_file(self, file_path: Path) -> str:

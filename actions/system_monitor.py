@@ -70,14 +70,20 @@ def _nvml_gpu() -> float:
 
 
 def _get_gpu_usage() -> float:
-    # pynvml — subprocess-free, works everywhere if installed
+    # Prefer the maintained nvidia-ml-py package; fallback to legacy pynvml.
     try:
-        import pynvml  # type: ignore
+        import nvidia_ml_py as pynvml  # type: ignore
         pynvml.nvmlInit()
         h = pynvml.nvmlDeviceGetHandleByIndex(0)
         return float(pynvml.nvmlDeviceGetUtilizationRates(h).gpu)
     except Exception:
-        pass
+        try:
+            import pynvml  # type: ignore
+            pynvml.nvmlInit()
+            h = pynvml.nvmlDeviceGetHandleByIndex(0)
+            return float(pynvml.nvmlDeviceGetUtilizationRates(h).gpu)
+        except Exception:
+            pass
 
     return _nvml_gpu()
 
