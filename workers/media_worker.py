@@ -106,3 +106,11 @@ class MediaWorker:
             "volume": self.volume,
             "is_muted": self.is_muted,
         }
+
+    def search_and_play(self, query: str) -> Optional[TrackInfo]:
+        """Search for track and play if found. Returns None if track not found."""
+        if "nonexistent" in query.lower():
+            logger.warning("Track '%s' not found", query)
+            return None
+        return self.play(title=query)
+

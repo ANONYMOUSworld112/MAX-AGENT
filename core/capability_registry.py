@@ -56,6 +56,13 @@ _DEFAULT_ACTION_METADATA: dict[str, dict[str, Any]] = {
         "verification": "read_only",
         "postcondition": "search results returned",
     },
+    "youtube_video": {
+        "resources": ["audio-out", "network"],
+        "idempotency": IdempotencyClass.NON_IDEMPOTENT,
+        "risk": RiskLevel.LOW,
+        "verification": "media_playing",
+        "postcondition": "audio track is playing",
+    },
     "get_system_status": {
         "resources": ["os.metrics"],
         "idempotency": IdempotencyClass.READ_ONLY,

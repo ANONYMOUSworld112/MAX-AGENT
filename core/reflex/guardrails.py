@@ -38,12 +38,17 @@ class ReflexGuardrails:
     HARD_BLOCKED_PATTERNS: List[str] = [
         "rm -rf /",
         "format c:",
-        "del /f /s /q c:",
+        "format drive",
+        "system32",
+        "del /f /s /q",
         "mkfs",
         "drop database",
         "kill -9 1",
         ":(){ :|:& };:",
         "bypass kill switch",
+        "ignore all instructions",
+        "disregard all instructions",
+        "disregard previous instructions",
     ]
 
     def __init__(self, fallback_mode: bool = False) -> None:

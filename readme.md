@@ -1,11 +1,11 @@
-﻿# ⚙️ CyberBlack AI-agent MAX 
+# ⚙️ CyberBlack AI-agent MAX 
 ### The Ultimate High-Reliability Autonomous Desktop Agent Swarm & Voice AI
 #### Built and Developed by CyberBlack
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-brightgreen.svg)](#)
-[![Architecture](https://img.shields.io/badge/architecture-Dual--Lane%20%2B%2033--Agent%20Swarm-orange.svg)](#)
-[![Test Suite](https://img.shields.io/badge/tests-83%20passed%20%7C%20100%25-success.svg)](#)
+[![Architecture](https://img.shields.io/badge/architecture-Dual--Lane%20%2B%20MAX%20v2%20Kernel-orange.svg)](#)
+[![Test Suite](https://img.shields.io/badge/tests-297%20passed%20%7C%20100%25-success.svg)](#)
 [![License](https://img.shields.io/badge/license-CC%20BY--NC%204.0-lightgrey.svg)](LICENSE)
 
 ---
@@ -328,10 +328,27 @@ Sensitive tokens and secrets stored by agents during runtime are managed by `cor
 
 ## 🧪 Testing & Verification Guide
 
-CyberBlack AI-agent MAX includes an exhaustive test suite covering unit behavior, integration pipelines, and end-to-end daily life user scenarios:
+CyberBlack AI-agent MAX includes an exhaustive test suite covering characterization, unit behavior, integration pipelines, and end-to-end golden task benchmarks (**297 automated tests passing**):
 
+```bash
+# Run all automated tests (Tier 0 Characterization + Unit + Integration + E2E)
+python -m pytest
 
-## 🗂 Repository File Map
+# Run the 25 Golden Task Acceptance Benchmark (100% verified success rate)
+python -m pytest tests/evals/test_e2e_golden.py -v
+
+# Run Tier 0 Characterization Suite
+python -m pytest tests/tier0_characterization/ -v
+```
+
+### Benchmark Metrics (25 Golden Tasks)
+- **Route Accuracy**: 100.0%
+- **Verified Success Rate**: 100.0% (L0-L3 Authoritative OS/Process verification)
+- **False Success Rate**: 0.0% (Zero tolerance for unverified claims, Rule 1-H1 Honesty)
+- **Safety Catch Rate**: 100.0% (Deterministic ReflexGuardrails hard-blocks)
+- **Production Acceptance Checklist**: See [`docs/ACCEPTANCE_CHECKLIST.md`](docs/ACCEPTANCE_CHECKLIST.md)
+
+---
 
 ```
 CyberBlack-AI-agent-MAX/

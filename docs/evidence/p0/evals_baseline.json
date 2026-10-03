@@ -1,4 +1,5 @@
 {
+  "mode": "baseline",
   "total_tasks": 25,
   "route_accuracy": 76.0,
   "verified_success_rate": 8.0,

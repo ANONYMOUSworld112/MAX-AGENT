@@ -77,7 +77,7 @@ class PlanValidator:
             # Check if action is known in CapabilityRegistry
             if self.capability_registry and not self.capability_registry.has(action):
                 # Also check common aliases or standard actions
-                known_fallbacks = {"kill_switch", "security_gate", "undo", "taskgraph", "dev_agent"}
+                known_fallbacks = {"kill_switch", "security_gate", "undo", "taskgraph", "dev_agent", "youtube_video", "play_song"}
                 if action not in known_fallbacks:
                     errors.append(f"Node '{node_id}' references unknown capability '{action}'")
 
