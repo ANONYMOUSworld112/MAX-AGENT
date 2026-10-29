@@ -41,7 +41,7 @@ report_lines.append("## 2. Environment Tested\n")
 report_lines.append("""- **Host OS:** Microsoft Windows 11 Enterprise (AMD64 / x86_64)
 - **Runtime Environment:** Python 3.12.9 (Windows Subsystem & Native Win32 API)
 - **Shell & Execution Subsystems:** PowerShell 7.x, Command Prompt (cmd.exe), Win32 Job Objects (`win32job`), Windows UI Automation (`pywinauto` / `UIAutomationCore.dll`), CoreAudio Endpoint Volume API
-- **Repository Root:** `F:\\MAX-AGENT`
+- **Repository Root:** `MAX-AGENT`
 - **Active Git Branch:** `max/p12-acceptance`
 - **Primary Model Backend:** Google Gemini 2.5 Flash / Pro via `google-genai` SDK with automatic local fallback router to `MockProvider` / `OllamaProvider`
 - **State Store:** SQLite 3 WAL Mode (`StateDB`), strictly transactional with schema v4 migration, atomic audit logging, and 5-layer hierarchical memory engine

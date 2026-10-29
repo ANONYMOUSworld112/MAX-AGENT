@@ -12,7 +12,7 @@ Defines safe, strongly-typed desktop automation primitives:
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 
 class DesktopAdapter(ABC):
@@ -62,3 +62,12 @@ class DesktopAdapter(ABC):
     def focus_window(self, title_or_handle: Union[str, int]) -> bool:
         """Bring window to foreground."""
         raise NotImplementedError
+
+    def get_screen_bounds(self) -> Tuple[int, int, int, int]:
+        """Return screen bounds (min_x, min_y, max_x, max_y)."""
+        raise NotImplementedError
+
+    def get_screen_size(self) -> Tuple[int, int]:
+        """Return screen size (width, height)."""
+        min_x, min_y, max_x, max_y = self.get_screen_bounds()
+        return (max_x - min_x, max_y - min_y)

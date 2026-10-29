@@ -17,17 +17,37 @@ def ensure_config_dir() -> None:
 def config_exists() -> bool:
     return CONFIG_FILE.exists()
 
-def save_api_keys(gemini_api_key: str) -> None:
+
+def _load_raw_config() -> dict:
+    if not CONFIG_FILE.exists():
+        return {}
+    try:
+        return json.loads(CONFIG_FILE.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+
+def save_api_keys(gemini_api_key: str, os_system: str | None = None) -> None:
+    """Persist the LLM key in the OS credential store, never in JSON config."""
     ensure_config_dir()
-
-    data: dict = {}
-    if CONFIG_FILE.exists():
+    key = gemini_api_key.strip()
+    if key:
+        from core.max_infra.vault import Vault, HAS_KEYRING, keyring
+        if not HAS_KEYRING or keyring is None:
+            raise RuntimeError("Secure keyring storage is unavailable. Install the keyring dependency first.")
         try:
-            data = json.loads(CONFIG_FILE.read_text(encoding="utf-8"))
-        except Exception:
-            data = {}
+            keyring.set_password("max_vault_gemini", "api_key", key)
+            if keyring.get_password("max_vault_gemini", "api_key") != key:
+                raise RuntimeError("The OS credential store did not verify the saved key.")
+            Vault.get_instance().set_secret("gemini", "api_key", key)
+        except Exception as exc:
+            raise RuntimeError(f"Could not save the API key in the OS credential store: {exc}") from exc
 
-    data["gemini_api_key"] = gemini_api_key.strip()
+    data = _load_raw_config()
+
+    # Remove a legacy plaintext key after the secure copy has been verified.
+    data.pop("gemini_api_key", None)
+    if os_system:
+        data["os_system"] = os_system
 
     CONFIG_FILE.write_text(
         json.dumps(data, indent=2),
@@ -35,16 +55,27 @@ def save_api_keys(gemini_api_key: str) -> None:
     )
 
 def load_api_keys() -> dict:
-    if not CONFIG_FILE.exists():
-        return {}
-    try:
-        return json.loads(CONFIG_FILE.read_text(encoding="utf-8"))
-    except Exception as e:
-        print(f"❌ Failed to load api_keys.json: {e}")
-        return {}
+    """Load non-secret settings; secret values are available only via get_* calls."""
+    data = _load_raw_config()
+    data.pop("gemini_api_key", None)
+    return data
 
 def get_gemini_key() -> str | None:
-    return load_api_keys().get("gemini_api_key")
+    from core.max_infra.vault import Vault, HAS_KEYRING
+    vault = Vault.get_instance()
+    secret = vault.get_secret("gemini", "api_key")
+    if secret:
+        return secret
+
+    legacy = _load_raw_config().get("gemini_api_key")
+    # Import an old config key only when it can be removed from disk safely.
+    if legacy and HAS_KEYRING:
+        try:
+            save_api_keys(legacy)
+            return legacy
+        except Exception:
+            pass
+    return None
 
 def is_configured() -> bool:
     key = get_gemini_key()
@@ -64,12 +95,8 @@ def get_user_name() -> str:
 def save_assistant_config(assistant_name: str, user_name: str) -> None:
     """Persist assistant name and user name to config."""
     ensure_config_dir()
-    data: dict = {}
-    if CONFIG_FILE.exists():
-        try:
-            data = json.loads(CONFIG_FILE.read_text(encoding="utf-8"))
-        except Exception:
-            data = {}
+    data = _load_raw_config()
+    data.pop("gemini_api_key", None)
     data["assistant_name"] = assistant_name.strip() or "MAX"
     data["user_name"] = user_name.strip()
     CONFIG_FILE.write_text(json.dumps(data, indent=4), encoding="utf-8")
@@ -92,16 +119,8 @@ def get_voice() -> str:
 def save_voice(voice_name: str) -> None:
     """Persist the chosen Live voice. Unknown names collapse to the default so a
     bad value can never reach the API and break the session."""
-    ensure_config_dir()
-    data: dict = {}
-    if CONFIG_FILE.exists():
-        try:
-            data = json.loads(CONFIG_FILE.read_text(encoding="utf-8"))
-        except Exception:
-            data = {}
     v = (voice_name or "").strip()
-    data["voice_name"] = v if v in AVAILABLE_VOICES else DEFAULT_VOICE
-    CONFIG_FILE.write_text(json.dumps(data, indent=4), encoding="utf-8")
+    _patch_config(voice_name=v if v in AVAILABLE_VOICES else DEFAULT_VOICE)
 
 
 def get_wake_word_enabled() -> bool:
@@ -110,15 +129,7 @@ def get_wake_word_enabled() -> bool:
 
 
 def save_wake_word_enabled(enabled: bool) -> None:
-    ensure_config_dir()
-    data: dict = {}
-    if CONFIG_FILE.exists():
-        try:
-            data = json.loads(CONFIG_FILE.read_text(encoding="utf-8"))
-        except Exception:
-            data = {}
-    data["wake_word_enabled"] = bool(enabled)
-    CONFIG_FILE.write_text(json.dumps(data, indent=4), encoding="utf-8")
+    _patch_config(wake_word_enabled=bool(enabled))
 
 
 def get_brief_enabled() -> bool:
@@ -126,15 +137,7 @@ def get_brief_enabled() -> bool:
 
 
 def save_brief_enabled(enabled: bool) -> None:
-    ensure_config_dir()
-    data: dict = {}
-    if CONFIG_FILE.exists():
-        try:
-            data = json.loads(CONFIG_FILE.read_text(encoding="utf-8"))
-        except Exception:
-            data = {}
-    data["morning_brief_enabled"] = enabled
-    CONFIG_FILE.write_text(json.dumps(data, indent=4), encoding="utf-8")
+    _patch_config(morning_brief_enabled=bool(enabled))
 
 
 # ── Audio devices ────────────────────────────────────────────────────────────
@@ -151,12 +154,8 @@ def _patch_config(**fields) -> None:
     setting is one line, and there is one place where a corrupt config file is
     handled instead of nine."""
     ensure_config_dir()
-    data: dict = {}
-    if CONFIG_FILE.exists():
-        try:
-            data = json.loads(CONFIG_FILE.read_text(encoding="utf-8"))
-        except Exception:
-            data = {}
+    data = _load_raw_config()
+    data.pop("gemini_api_key", None)
     data.update(fields)
     CONFIG_FILE.write_text(json.dumps(data, indent=4), encoding="utf-8")
 
@@ -206,12 +205,8 @@ def save_plugin_config(namespace: str, values: dict) -> None:
     """Merge `values` into a namespace's stored config (read-modify-write, like
     every other helper here). Only the provided keys are touched."""
     ensure_config_dir()
-    data: dict = {}
-    if CONFIG_FILE.exists():
-        try:
-            data = json.loads(CONFIG_FILE.read_text(encoding="utf-8"))
-        except Exception:
-            data = {}
+    data = _load_raw_config()
+    data.pop("gemini_api_key", None)
     pc = data.get("plugin_config")
     if not isinstance(pc, dict):
         pc = {}
@@ -226,12 +221,8 @@ def save_plugin_config(namespace: str, values: dict) -> None:
 
 def save_plugin_enabled(plugin_name: str, enabled: bool) -> None:
     ensure_config_dir()
-    data: dict = {}
-    if CONFIG_FILE.exists():
-        try:
-            data = json.loads(CONFIG_FILE.read_text(encoding="utf-8"))
-        except Exception:
-            data = {}
+    data = _load_raw_config()
+    data.pop("gemini_api_key", None)
     plugins_cfg = data.get("plugins_enabled")
     if not isinstance(plugins_cfg, dict):
         plugins_cfg = {}

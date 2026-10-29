@@ -6,8 +6,8 @@ build-backend = "setuptools.build_meta"
 name = "cyberblack-ai-agent-max"
 version = "3.0.0"
 description = "CyberBlack AI-agent MAX: High-Reliability Autonomous Desktop Agent Swarm"
-readme = "readme.md"
-requires-python = ">=3.10"
+readme = "README.md"
+requires-python = ">=3.11"
 license = "CC-BY-NC-4.0"
 authors = [
     { name = "CyberBlack & MAX Autonomous Systems" }
@@ -33,4 +33,4 @@ filterwarnings = [
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["agents*", "core*", "actions*", "dashboard*", "ui*", "memory*"]
+include = ["agents*", "core*", "actions*", "dashboard*", "ui*", "memory*", "workers*", "tools*", "skills*"]

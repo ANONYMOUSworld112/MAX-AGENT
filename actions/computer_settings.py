@@ -15,12 +15,6 @@ try:
 except ImportError:
     _PYAUTOGUI = False
 
-try:
-    import pyperclip
-    _PYPERCLIP = True
-except ImportError:
-    _PYPERCLIP = False
-
 from core import confirm
 from core.undo import push_undo
 
@@ -435,12 +429,10 @@ def press_key(key: str): pyautogui.press(key)
 def type_text(text: str, press_enter_after: bool = False):
     if not text:
         return
-    if _PYPERCLIP:
-        pyperclip.copy(str(text))
-        time.sleep(0.15)
-        paste()
-    else:
-        pyautogui.write(str(text), interval=0.03)
+    # Share the fast, clipboard-free keyboard typing path with computer_control.
+    from actions.computer_control import _type
+
+    _type(str(text))
     if press_enter_after:
         time.sleep(0.1)
         pyautogui.press("enter")
@@ -841,8 +833,9 @@ def computer_settings(
             return f"Could not set volume: {e}"
 
     if action in ("type_text", "write_on_screen", "type", "write"):
-        text = str(value or params.get("text", "")).strip()
-        if not text:
+        raw_text = value if value not in (None, "") else params.get("text", "")
+        text = str(raw_text)
+        if not text.strip():
             return "No text provided to type."
         enter_after = str(params.get("press_enter", "false")).lower() in ("true", "1", "yes")
         type_text(text, press_enter_after=enter_after)
@@ -939,7 +932,7 @@ TOOL = {
                     "find_on_page | scroll_up | scroll_down | scroll_top | "
                     "scroll_bottom | page_up | page_down | copy | paste | cut | "
                     "undo | redo | select_all | save | enter | escape | press_key | "
-                    "type_text | screenshot | lock_screen | open_settings | "
+                    "type_text (keyboard input) | screenshot | lock_screen | open_settings | "
                     "file_explorer | open_run | dark_mode | toggle_wifi | "
                     "restart | shutdown"
                 )
@@ -953,7 +946,7 @@ TOOL = {
             },
             "value": {
                 "type": "STRING",
-                "description": "Optional value: volume level 0-100, text to type, key name, etc."
+                "description": "Optional value: volume level 0-100, exact text to type (preserve whitespace), key name, etc."
             }
         },
         "required": []

@@ -20,6 +20,14 @@ class FakeDesktopAdapter(DesktopAdapter):
         self.mock_elements: List[Dict[str, Any]] = []
         self.active_window: Optional[Dict[str, Any]] = None
 
+    def get_screen_bounds(self) -> Tuple[int, int, int, int]:
+        """Return simulated display boundaries."""
+        return (0, 0, 1920, 1080)
+
+    def get_screen_size(self) -> Tuple[int, int]:
+        """Return simulated display size."""
+        return (1920, 1080)
+
     def add_mock_window(
         self,
         title: str,

@@ -1,4 +1,4 @@
-﻿"""CyberBlack AI-agent MAX + MAX OS + LAYA — Automated Setup and Package Installer.
+"""CyberBlack AI-agent MAX + MAX OS + LAYA — Automated Setup and Package Installer.
 
 Dual-Mode Architecture:
 1. Environment Setup Runner (Default CLI):
@@ -41,16 +41,40 @@ def _run(label: str, args: list[str]) -> None:
 
 
 def ensure_runtime_directories() -> None:
-    """Creates essential runtime directories if missing."""
+    """Creates essential runtime directories and template files if missing."""
+    import shutil
+
     dirs = [
         ROOT_DIR / "config",
         ROOT_DIR / "memory",
+        ROOT_DIR / "memory" / "backups",
         ROOT_DIR / "logs",
+        ROOT_DIR / "notes",
         ROOT_DIR / ".snapshots",
     ]
     for d in dirs:
         d.mkdir(parents=True, exist_ok=True)
-    print("📁 Runtime directories verified (config, memory, logs, .snapshots).")
+
+    # Initialize .gitkeep files for clean state
+    for keep_dir in (ROOT_DIR / "logs", ROOT_DIR / "notes", ROOT_DIR / "memory" / "backups"):
+        keep_file = keep_dir / ".gitkeep"
+        if not keep_file.exists():
+            keep_file.write_text("", encoding="utf-8")
+
+    # Initialize configuration templates if not present
+    api_keys_file = ROOT_DIR / "config" / "api_keys.json"
+    api_keys_example = ROOT_DIR / "config" / "api_keys.example.json"
+    if not api_keys_file.exists() and api_keys_example.exists():
+        shutil.copyfile(api_keys_example, api_keys_file)
+        print("📋 Initialized config/api_keys.json from clean template.")
+
+    env_file = ROOT_DIR / ".env"
+    env_example = ROOT_DIR / ".env.example"
+    if not env_file.exists() and env_example.exists():
+        shutil.copyfile(env_example, env_file)
+        print("📋 Initialized .env from clean template.")
+
+    print("📁 Runtime directories verified (config, memory, logs, notes, .snapshots).")
 
 
 def main_installer() -> None:
@@ -60,7 +84,7 @@ def main_installer() -> None:
     print(f"   Python Version: {sys.version.split()[0]} ({sys.executable})")
     print("=" * 70)
 
-    # 1. Directory Structure
+    # 1. Directory Structure & Templates
     ensure_runtime_directories()
 
     # 2. Python Dependencies
@@ -110,11 +134,11 @@ def main_installer() -> None:
         )
 
     print("\n" + "=" * 70)
-    print("✅ Setup complete!")
-    print("   1) Verify Test Suite:  python -m pytest tests/ -v")
-    print("   2) Launch Assistant:   python main.py")
-    print("   3) Enter Gemini API key when prompted in the UI.")
-    print("   4) (Optional) Enable 'Hey MAX' wake word from ⚙ → WAKE WORD.")
+    print("✅ Setup complete! Quick Start Options:")
+    print("   1) Run Voice HUD (PyQt6 Dark Interface): python main.py")
+    print("   2) Run CLI Chat (Fast Terminal Agent):   python friday_cli.py")
+    print("   3) Verify Test Suite (100% Passing):     python -m pytest")
+    print("   4) Provide API Key in .env or enter it when prompted on launch.")
     print("=" * 70 + "\n")
 
 
@@ -128,16 +152,36 @@ def _run_setuptools() -> None:
 
     setup(
         name="cyberblack-ai-agent-max",
-        version="3.0.0",
-        description="CyberBlack AI-agent MAX: High-Reliability Autonomous Desktop Agent Swarm",
-        long_description=(ROOT_DIR / "readme.md").read_text(encoding="utf-8") if (ROOT_DIR / "readme.md").exists() else "",
+        version="3.1.0",
+        description="CyberBlack AI-agent MAX: High-Reliability Autonomous Desktop Agent Swarm & Voice AI",
+        long_description=(
+            (ROOT_DIR / "README.md").read_text(encoding="utf-8")
+            if (ROOT_DIR / "README.md").exists()
+            else (ROOT_DIR / "readme.md").read_text(encoding="utf-8")
+            if (ROOT_DIR / "readme.md").exists()
+            else ""
+        ),
         long_description_content_type="text/markdown",
         author="CyberBlack & MAX Autonomous Systems",
-        packages=find_packages(include=["agents*", "core*", "actions*", "dashboard*", "ui*", "memory*"]),
-        python_requires=">=3.10",
+        packages=find_packages(
+            include=[
+                "agents*",
+                "core*",
+                "actions*",
+                "dashboard*",
+                "ui*",
+                "memory*",
+                "workers*",
+                "tools*",
+                "skills*",
+            ]
+        ),
+        python_requires=">=3.11",
         entry_points={
             "console_scripts": [
                 "cyberblack-max=main:main",
+                "friday=friday_cli:main",
+                "max-cli=friday_cli:main",
             ],
         },
         install_requires=[
@@ -151,10 +195,20 @@ def _run_setuptools() -> None:
             "playwright>=1.40.0",
             "pyautogui>=0.9.54",
             "pyperclip>=1.8.2",
+            "pygetwindow>=0.0.9",
             "psutil>=5.9.0",
             "fastapi>=0.110.0",
             "uvicorn>=0.27.0",
             "cryptography>=42.0.0",
+            "pillow>=10.0.0",
+            "opencv-python>=4.8.0",
+            "mss>=9.0.0",
+            "send2trash>=1.8.0",
+            "pydantic>=2.0.0",
+            "pydantic-settings>=2.0.0",
+            "pyyaml>=6.0",
+            "qrcode[pil]>=7.4.2",
+            "httpx>=0.27.0",
         ],
         extras_require={
             "test": [
@@ -162,7 +216,6 @@ def _run_setuptools() -> None:
                 "pytest-asyncio>=0.21.0",
                 "pytest-cov>=4.1.0",
                 "hypothesis>=6.90.0",
-                "httpx>=0.27.0",
             ],
             "wake_word": [
                 "openwakeword>=0.6.0",

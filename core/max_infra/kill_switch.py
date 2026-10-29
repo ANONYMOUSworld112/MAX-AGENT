@@ -52,6 +52,10 @@ class KillSwitch:
             self._registered_pids.clear()
             logger.info("KillSwitch armed and reset.")
 
+    def rearm(self) -> None:
+        """Alias for reset: re-arms the kill switch."""
+        self.reset()
+
     def is_armed(self) -> bool:
         with self._state_lock:
             return self._armed

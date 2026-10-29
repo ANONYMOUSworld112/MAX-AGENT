@@ -1,4 +1,4 @@
-﻿
+
 from __future__ import annotations
 
 import asyncio
@@ -20,6 +20,28 @@ from playwright.async_api import (
     TimeoutError as PlaywrightTimeout,
 )
 _OS = platform.system()   # "Windows" | "Darwin" | "Linux"
+
+
+class AmbiguousClickTarget(ValueError):
+    """Raised when a description matches more than one clickable element."""
+
+
+async def _click_unique(locator, description: str, timeout: int) -> bool:
+    """Click only a unique target, letting Playwright perform actionability checks.
+
+    Locator.click() waits for visibility, stability, enabled state, and pointer
+    hit-testing. Refusing ambiguous matches prevents a silent `.first` click on
+    the wrong control.
+    """
+    count = await locator.count()
+    if count == 0:
+        return False
+    if count > 1:
+        raise AmbiguousClickTarget(
+            f"'{description}' matched {count} elements; provide a more specific target."
+        )
+    await locator.click(timeout=timeout)
+    return True
 
 def _normalize_url(url: str) -> str:
     """
@@ -671,26 +693,46 @@ class _BrowserSession:
     async def click(self, selector: str = None, text: str = None) -> str:
         page = await self._get_page()
         try:
+            clicked_desc = ""
             if text:
-                await page.get_by_text(text, exact=False).first.click(timeout=8_000)
-                return f"Clicked text: '{text}'"
-            if selector:
-                await page.click(selector, timeout=8_000)
-                return f"Clicked selector: {selector}"
-            return "No selector or text provided."
+                candidates = (
+                    ("button", page.get_by_role("button", name=text, exact=False)),
+                    ("link", page.get_by_role("link", name=text, exact=False)),
+                    ("text", page.get_by_text(text, exact=False)),
+                )
+                for kind, locator in candidates:
+                    if await _click_unique(locator, f"{kind} '{text}'", 8_000):
+                        clicked_desc = f"{kind} '{text}'"
+                        break
+                if not clicked_desc:
+                    return f"Element not found: text='{text}'"
+            elif selector:
+                if not await _click_unique(page.locator(selector), f"selector '{selector}'", 8_000):
+                    return f"Element not found: selector='{selector}'"
+                clicked_desc = f"selector '{selector}'"
+            else:
+                return "No selector or text provided."
+
+            # The locator click completed only after Playwright confirmed the
+            # target was actionable and actually received the pointer event.
+            title = await page.title()
+            curr_url = page.url
+            return f"Clicked {clicked_desc}. Resulting page: '{title}' ({curr_url})"
+        except AmbiguousClickTarget as e:
+            return f"Click error: {e}"
         except PlaywrightTimeout:
-            return "Element not found (timeout)."
+            return f"Click error: target was not actionable within 8s: text='{text}' selector='{selector}'"
         except Exception as e:
             return f"Click error: {e}"
 
     async def type_text(self, selector: str = None, text: str = "",
-                        clear_first: bool = True) -> str:
+                        clear_first: bool = False) -> str:
         page = await self._get_page()
         try:
             el = page.locator(selector).first if selector else page.locator(":focus")
             if clear_first:
                 await el.clear()
-            await el.type(text, delay=50)
+            await el.type(text, delay=0)
             return "Text typed."
         except Exception as e:
             return f"Type error: {e}"
@@ -731,7 +773,7 @@ class _BrowserSession:
             try:
                 el = page.locator(selector).first
                 await el.clear()
-                await el.type(str(value), delay=40)
+                await el.type(str(value), delay=0)
                 results.append(f"✓ {selector}")
             except Exception as e:
                 results.append(f"✗ {selector}: {e}")
@@ -739,27 +781,28 @@ class _BrowserSession:
 
     async def smart_click(self, description: str) -> str:
         page = await self._get_page()
-        for role in ("button", "link", "searchbox", "textbox", "menuitem", "tab"):
+        if not description.strip():
+            return "Could not find element: target description is empty."
+
+        candidates = [
+            (role, page.get_by_role(role, name=description, exact=False))
+            for role in ("button", "link", "menuitem", "tab", "searchbox", "textbox")
+        ]
+        candidates.extend((
+            ("label", page.get_by_label(description, exact=False)),
+            ("text", page.get_by_text(description, exact=False)),
+            ("placeholder", page.get_by_placeholder(description, exact=False)),
+            ("alt text", page.get_by_alt_text(description, exact=False)),
+            ("title", page.get_by_title(description, exact=False)),
+        ))
+        for kind, locator in candidates:
             try:
-                loc = page.get_by_role(role, name=description)
-                if await loc.count() > 0:
-                    await loc.first.click(timeout=5_000)
-                    return f"Clicked ({role}): '{description}'"
-            except Exception:
-                pass
-        for attempt in (
-            lambda: page.get_by_text(description, exact=False).first.click(timeout=5_000),
-            lambda: page.get_by_placeholder(description, exact=False).first.click(timeout=5_000),
-            lambda: page.locator(
-                f'[alt*="{description}" i],[title*="{description}" i],'
-                f'[aria-label*="{description}" i]'
-            ).first.click(timeout=5_000),
-        ):
-            try:
-                await attempt()
-                return f"Clicked: '{description}'"
-            except Exception:
-                pass
+                if await _click_unique(locator, f"{kind} '{description}'", 8_000):
+                    return f"Clicked ({kind}): '{description}'"
+            except AmbiguousClickTarget as e:
+                return f"Click error: {e}"
+            except Exception as e:
+                return f"Click error: {e}"
         return f"Could not find element: '{description}'"
 
     async def smart_type(self, description: str, text: str) -> str:
@@ -777,7 +820,7 @@ class _BrowserSession:
                 if await el.count() == 0:
                     continue
                 await el.clear()
-                await el.type(text, delay=50)
+                await el.type(text, delay=0)
                 return f"Typed into ({method}): '{description}'"
             except Exception:
                 continue
@@ -930,8 +973,8 @@ def browser_control(
     session_memory=None,
 ) -> str:
     params  = parameters or {}
-    action  = params.get("action", "").lower().strip()
-    browser = params.get("browser", "").lower().strip() or None
+    action  = (params.get("action") or "").lower().strip()
+    browser = (params.get("browser") or "").lower().strip() or None
     result  = "Unknown action."
 
     if action == "switch":
@@ -997,6 +1040,39 @@ def browser_control(
     # These require a physically controllable browser; the automation window
     # only opens here, and as soon as it opens it goes to the user's last
     # navigated page — it doesn't sit on a blank page.
+    if action in ("click", "smart_click"):
+        # Firecrawl is the preferred web-click provider for LAYA. Keep the
+        # existing Playwright path as an offline/local fallback when no
+        # Firecrawl credential is configured.
+        from core.firecrawl_client import FirecrawlClient, FirecrawlError, click_once
+
+        firecrawl = FirecrawlClient()
+        if firecrawl.configured:
+            if params.get("url"):
+                current = str(params["url"])
+            elif _registry.has(browser):
+                active_session = _registry.get(browser)
+                current = str(active_session.run(active_session.get_url()))
+            else:
+                current = _registry._last_native_url
+            current = current.strip()
+            if not current or current == "about:blank":
+                result = "Open a page or provide a URL before clicking with Firecrawl."
+            else:
+                current = _normalize_url(current)
+                target = params.get("description", "") if action == "smart_click" else (
+                    params.get("text") or f"CSS selector {params.get('selector', '')}"
+                )
+                if not str(target).strip():
+                    result = "Provide visible text, a description, or a CSS selector to click."
+                else:
+                    try:
+                        result = click_once(current, str(target))
+                    except FirecrawlError as exc:
+                        result = f"Firecrawl click failed: {exc}"
+            _log(player, result)
+            return result
+
     try:
         sess = _registry.get(browser)
     except Exception as e:
@@ -1005,6 +1081,7 @@ def browser_control(
         return result
 
     try:
+
         last = _registry.pop_native_url()
         if last:
             try:
@@ -1016,7 +1093,7 @@ def browser_control(
             result = sess.run(sess.click(params.get("selector"), params.get("text")))
         elif action == "type":
             result = sess.run(sess.type_text(
-                params.get("selector"), params.get("text", ""), params.get("clear_first", True)))
+                params.get("selector"), params.get("text", ""), params.get("clear_first", False)))
         elif action == "scroll":
             result = sess.run(sess.scroll(params.get("direction", "down"), int(params.get("amount", 500))))
         elif action == "fill_form":
@@ -1063,7 +1140,7 @@ def _log(player, text: str):
 # ── Tool declaration (auto-discovered by core/action_loader.py) ──────────────
 TOOL = {
     "name": "browser_control",
-    "description": "Controls any web browser. Use for: opening websites, searching the web, clicking elements, filling forms, scrolling, screenshots, navigation, any web-based task. Simple open/search requests launch the user's own browser normally (their real profile and logged-in accounts); interactive actions (click, type, fill_form...) attach an automation browser. Always pass the 'browser' parameter when the user specifies a browser (e.g. 'open in Edge', 'use Firefox', 'open Chrome'). Multiple browsers can run simultaneously.",
+    "description": "Controls any web browser. Use for: opening websites, searching the web, clicking elements, filling forms, scrolling, screenshots, navigation, any web-based task. LAYA web-click tasks use the Firecrawl browser plugin/provider when configured; Playwright is the local fallback. Simple open/search requests launch the user's own browser normally. Always pass the 'browser' parameter when the user specifies a browser (e.g. 'open in Edge', 'use Firefox', 'open Chrome'). Multiple browsers can run simultaneously.",
     "parameters": {
         "type": "OBJECT",
         "properties": {
@@ -1077,7 +1154,7 @@ TOOL = {
             },
             "url": {
                 "type": "STRING",
-                "description": "URL for go_to / new_tab action"
+                "description": "URL for go_to / new_tab or a remote Firecrawl click session"
             },
             "query": {
                 "type": "STRING",
@@ -1097,7 +1174,7 @@ TOOL = {
             },
             "description": {
                 "type": "STRING",
-                "description": "Element description for smart_click/smart_type"
+                "description": "Element description for smart_click/smart_type; smart_type replaces the field using keyboard input"
             },
             "direction": {
                 "type": "STRING",
@@ -1121,7 +1198,7 @@ TOOL = {
             },
             "clear_first": {
                 "type": "BOOLEAN",
-                "description": "Clear field before typing (default: true)"
+                "description": "Clear field before type action (default: false; set true only when replacement is requested)"
             }
         },
         "required": [

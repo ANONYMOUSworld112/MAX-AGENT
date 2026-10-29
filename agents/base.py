@@ -96,7 +96,8 @@ class BaseAgent(ABC):
 
                 # 5. Reconciliation (if modifying files)
                 if input_data.target_files and output.success:
-                    recon_rep = self.reconciliation_engine.verify_files_exist(input_data.target_files)
+                    check_files = output.artifacts.get("written_files") if (output.artifacts and "written_files" in output.artifacts) else input_data.target_files
+                    recon_rep = self.reconciliation_engine.verify_files_exist(check_files)
                     if not recon_rep.is_verified:
                         raise RuntimeError(f"State reconciliation failed: {recon_rep.details}")
 

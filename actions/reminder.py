@@ -1,4 +1,4 @@
-﻿import json
+import json
 import os
 import platform
 import shutil
@@ -291,17 +291,34 @@ def reminder(
     session_memory=None,
 ) -> str:
 
-    date_str = parameters.get("date", "").strip()
-    time_str = parameters.get("time", "").strip()
-    message  = parameters.get("message", "Reminder").strip()
+    date_str = str(parameters.get("date", "")).strip()
+    time_str = str(parameters.get("time", "")).strip()
+    message  = str(parameters.get("message", "Reminder")).strip()
 
-    if not date_str or not time_str:
+    minutes = parameters.get("minutes")
+    seconds = parameters.get("seconds")
+    from datetime import timedelta
+    if minutes is not None or seconds is not None:
+        delta_sec = (float(minutes) * 60.0 if minutes else 0.0) + (float(seconds) if seconds else 0.0)
+        target_dt = datetime.now() + timedelta(seconds=delta_sec)
+        date_str = target_dt.strftime("%Y-%m-%d")
+        time_str = target_dt.strftime("%H:%M")
+    elif date_str.lower() in ("today", "") and time_str:
+        date_str = datetime.now().strftime("%Y-%m-%d")
+        try:
+            target_dt = datetime.strptime(f"{date_str} {time_str}", "%Y-%m-%d %H:%M")
+            if target_dt <= datetime.now():
+                target_dt += timedelta(days=1)
+                date_str = target_dt.strftime("%Y-%m-%d")
+        except ValueError:
+            return "I couldn't parse that time. Please use HH:MM format."
+    elif not date_str or not time_str:
         return "I need both a date and a time to set a reminder."
-
-    try:
-        target_dt = datetime.strptime(f"{date_str} {time_str}", "%Y-%m-%d %H:%M")
-    except ValueError:
-        return "I couldn't parse that date or time. Please use YYYY-MM-DD and HH:MM."
+    else:
+        try:
+            target_dt = datetime.strptime(f"{date_str} {time_str}", "%Y-%m-%d %H:%M")
+        except ValueError:
+            return "I couldn't parse that date or time. Please use YYYY-MM-DD and HH:MM."
 
     if target_dt <= datetime.now():
         return "That time has already passed — I can't set a reminder in the past."
@@ -310,9 +327,24 @@ def reminder(
     safe_msg   = _sanitise(message)
     task_name  = f"MAXReminder_{target_dt.strftime('%Y%m%d_%H%M%S')}"
 
+    # Register with MAX ReminderWorker for real-time in-session voice alerts
+    worker_saved = False
+    try:
+        from workers.reminder_worker import ReminderWorker
+        db_dir = Path.home() / ".MAX"
+        db_dir.mkdir(parents=True, exist_ok=True)
+        rem_worker = ReminderWorker(db_dir / "reminders.db")
+        rem_worker.create_reminder(text=safe_msg, due_time=target_dt.timestamp())
+        worker_saved = True
+    except Exception as _re_err:
+        print(f"[Reminder] ⚠️ Could not save to ReminderWorker: {_re_err}")
+
     try:
         script_path = _write_notify_script(task_name, safe_msg, os_name)
     except Exception as e:
+        if worker_saved:
+            friendly_time = target_dt.strftime("%B %d at %I:%M %p")
+            return f"Reminder set for {friendly_time}."
         return f"Could not prepare the reminder script: {e}"
 
     try:
@@ -325,9 +357,12 @@ def reminder(
     except Exception as e:
         script_path.unlink(missing_ok=True)
         print(f"[Reminder] ❌ Scheduling exception: {e}")
+        if worker_saved:
+            friendly_time = target_dt.strftime("%B %d at %I:%M %p")
+            return f"Reminder set for {friendly_time}."
         return "Something went wrong while scheduling the reminder."
 
-    if not job_id:
+    if not job_id and not worker_saved:
         return "I couldn't register the reminder with the system scheduler."
 
     if player:

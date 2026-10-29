@@ -18,7 +18,6 @@ Also provides the deterministic AgentRouter implementing the 5-step routing algo
 from __future__ import annotations
 
 import logging
-import threading
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 from agents.base import BaseAgent
@@ -37,6 +36,73 @@ from core.max_infra.circuit_breaker import CircuitBreaker, CircuitState
 logger = logging.getLogger("max.agents.router")
 
 
+SWARM_CLUSTERS: Dict[str, Dict[str, Any]] = {
+    "core": {
+        "title": "Cluster 1: Core Reasoning (5 Agents)",
+        "summary": "High-level goal planning, subtask DAG generation, quality verification, and model selection.",
+        "agents": [
+            ("MasterOrchestrator", "Root task coordinator that evaluates goals, builds execution graphs (DAGs), and delegates subtasks."),
+            ("DecompositionPlanner", "Breaks complex, high-level requests into atomic, dependency-ordered subtasks."),
+            ("ValidationVerifier", "Validates task outcomes across L0–L3 ground-truth criteria before completion is acknowledged."),
+            ("ModelRouter", "Dynamically selects the best LLM or local model backend based on task complexity, latency, and cost."),
+            ("AdversarialCritic", "Evaluates plans and code defensively, hunting for logical flaws, edge-case failures, or security risks."),
+        ],
+    },
+    "software": {
+        "title": "Cluster 2: Software Delivery (8 Agents)",
+        "summary": "Autonomous sandboxed development, code quality reviews, test generation, and dependency auditing.",
+        "agents": [
+            ("CodingAgent", "Writes, refactors, and implements clean code across multiple languages in isolated git worktrees."),
+            ("CodeReviewer", "Conducts rigorous automated code reviews for syntax, correctness, security vulnerabilities, and code smell."),
+            ("TestWriter", "Generates comprehensive unit, integration, and property-based test suites to guarantee code coverage."),
+            ("DevOpsAgent", "Automates CI/CD pipelines, container orchestration, build workflows, and deployment scripts."),
+            ("DBAgent", "Designs relational and NoSQL database schemas, writes migrations, and optimizes SQL queries."),
+            ("APIDesigner", "Architects REST, GraphQL, and WebSocket API contracts, OpenAPI specs, and data validation schemas."),
+            ("DocWriter", "Generates developer-friendly API documentation, architectural specs, READMEs, and technical user guides."),
+            ("DependencyMgr", "Audits package dependencies, resolves version conflicts, updates packages, and flags CVE vulnerabilities."),
+        ],
+    },
+    "productivity": {
+        "title": "Cluster 3: Founder Productivity (8 Agents)",
+        "summary": "Email drafting, calendar scheduling, web research, meeting preparation, and desktop organization.",
+        "agents": [
+            ("EmailAgent", "Triages inboxes, summarizes critical threads, drafts professional email responses, and flags high-priority items."),
+            ("CalendarAgent", "Schedules meetings, detects agenda conflicts, books appointments, and optimizes time blocking."),
+            ("CommsAgent", "Drafts and coordinates communications across Slack, Discord, SMS, and team chat channels."),
+            ("ResearchAgent", "Performs deep multi-source web research, fact-checks information, aggregates data, and synthesizes findings."),
+            ("FileOrganizer", "Cleans up downloads, categorizes documents, deduplicates files, and maintains desktop order."),
+            ("NotesAgent", "Captures quick thoughts, structures brainstorming sessions, and keeps searchable meeting notes."),
+            ("TaskTracker", "Manages daily to-do lists, tracks milestone deadlines, sets persistent reminders, and reports task progress."),
+            ("MeetingPrep", "Compiles participant profiles, agenda briefings, and relevant context documents ahead of scheduled meetings."),
+        ],
+    },
+    "safety": {
+        "title": "Cluster 4: Safety & Input Control (6 Agents)",
+        "summary": "UIAutomation control, browser automation, human-dominant input arbitration, and snapshot recovery.",
+        "agents": [
+            ("ComputerUseAgent", "Performs GUI navigation, synthetic mouse clicks, and keyboard strokes via OS accessibility APIs."),
+            ("DesktopAgent", "Manages desktop windows, opens applications, resizes views, and automates OS shell interactions."),
+            ("BrowserAgent", "Automates web browser navigation, page scraping, form submission, and web application interactions."),
+            ("InputArbiter", "Resolves input contention between user physical input and synthetic automation, ensuring human primacy."),
+            ("SecurityGate", "Evaluates instructions against safety guardrails, enforcing permission tiers and hard-blocking dangerous commands."),
+            ("RecoveryEngine", "Reverts failed operations, restores file snapshots from pre-execution state, and manages rollbacks."),
+        ],
+    },
+    "health": {
+        "title": "Cluster 5: Infrastructure & Health (6 Agents)",
+        "summary": "Telemetry profiling, network reachability, state backup, package patching, and component health.",
+        "agents": [
+            ("SystemMonitorAgent", "Tracks real-time CPU, RAM, GPU, temperature, and disk metrics, alerting on critical thresholds."),
+            ("NetworkAgent", "Monitors network connectivity, DNS resolution, bandwidth, and adapter link status."),
+            ("BackupAgent", "Creates scheduled snapshots, archives critical state databases, and manages off-site redundancy."),
+            ("UpdateAgent", "Checks for system updates, package patches, security fixes, and manages autonomous updates."),
+            ("PerformanceAgent", "Profiles execution latency, identifies system bottlenecks, and tunes resource allocations."),
+            ("HealthCheck", "Executes self-diagnostic sanity checks across all MAX subsystems to verify total system health."),
+        ],
+    },
+}
+
+
 class AgentRegistry:
     """Central registry for the 33-agent swarm."""
 
@@ -44,6 +110,7 @@ class AgentRegistry:
 
     def __init__(self) -> None:
         self._agents: Dict[str, BaseAgent] = {}
+        self._extensions: Dict[str, BaseAgent] = {}
 
     @classmethod
     def get_instance(cls) -> AgentRegistry:
@@ -73,13 +140,16 @@ class AgentRegistry:
         self._agents[canonical] = agent
         logger.debug("Registered agent: %s (%s)", agent.name, canonical)
 
+    def register_extension(self, agent: BaseAgent) -> None:
+        self._extensions[agent.name.lower().strip()] = agent
+
     def get(self, name: str) -> Optional[BaseAgent]:
         key = name.lower().strip()
         if key in self._agents:
             return self._agents[key]
         if key in self.ALIASES and self.ALIASES[key] in self._agents:
             return self._agents[self.ALIASES[key]]
-        return None
+        return self._extensions.get(key)
 
     def list_all(self) -> List[BaseAgent]:
         return list(self._agents.values())
@@ -89,7 +159,47 @@ class AgentRegistry:
         return self.list_all()
 
     def get_all_tool_definitions(self) -> List[Dict[str, Any]]:
-        return [agent.get_tool_definition() for agent in self._agents.values()]
+        return [agent.get_tool_definition() for agent in (*self._agents.values(), *self._extensions.values())]
+
+    def get_swarm_catalog(self) -> Dict[str, Dict[str, Any]]:
+        """Returns the structured catalog of all 33 agents across 5 clusters."""
+        return SWARM_CLUSTERS
+
+    def get_swarm_summary(self, cluster: str = "all") -> str:
+        """Returns a comprehensive, formatted breakdown of the 33 specialized agents.
+
+        Explains what the agents are and what each does across their 5 operational clusters.
+        """
+        cluster_key = cluster.lower().strip() if cluster else "all"
+
+        if cluster_key in SWARM_CLUSTERS:
+            info = SWARM_CLUSTERS[cluster_key]
+            lines = [
+                f"{info['title']}:",
+                f"Mission: {info['summary']}",
+                "",
+                "Agents in this cluster:",
+            ]
+            for name, desc in info["agents"]:
+                lines.append(f"• {name}: {desc}")
+            return "\n".join(lines)
+
+        # Full catalog of all 33 agents across all 5 clusters
+        lines = [
+            "MAX 33-AGENT SPECIALIZED SWARM CATALOG (5 CLUSTERS):",
+            "MAX coordinates 33 autonomous specialized agents organized into 5 operational clusters to handle any cognitive or OS task:\n",
+        ]
+        total_count = sum(len(c["agents"]) for c in SWARM_CLUSTERS.values())
+
+        for key, info in SWARM_CLUSTERS.items():
+            lines.append(f"═══ {info['title']} ═══")
+            lines.append(f"Mission: {info['summary']}")
+            for name, desc in info["agents"]:
+                lines.append(f"  • {name}: {desc}")
+            lines.append("")
+
+        lines.append(f"Total Agents: {total_count} fully registered across 5 clusters.")
+        return "\n".join(lines)
 
     def register_defaults(self) -> None:
         """Registers all 33 default agents across the 5 MAX OS clusters."""
@@ -188,7 +298,7 @@ class AgentRegistry:
         for ag in default_agents:
             self.register(ag)
 
-        logger.info("AgentRegistry initialized with %d default agents.", len(default_agents))
+        logger.info("AgentRegistry initialized with %d default agents and %d extensions.", len(default_agents), len(self._extensions))
 
 
 # ---------------------------------------------------------------------------
@@ -271,6 +381,12 @@ DEFAULT_ACTION_CANDIDATES: Dict[str, List[Tuple[str, float, int]]] = {
     "validationverifier": [("validationverifier", 1.0, 100)],
     "modelrouter": [("modelrouter", 1.0, 100)],
     "adversarialcritic": [("adversarialcritic", 1.0, 100)],
+
+    # 33-Agent Swarm Inquiries
+    "get_swarm_agents": [("masterorchestrator", 1.0, 100), ("decompositionplanner", 0.8, 50)],
+    "swarm_agents": [("masterorchestrator", 1.0, 100)],
+    "33_agents": [("masterorchestrator", 1.0, 100)],
+    "list_agents": [("masterorchestrator", 1.0, 100)],
 }
 
 

@@ -25,7 +25,10 @@ def _gemini_search(query: str) -> str:
     response = client.models.generate_content(
         model="gemini-flash-latest",
         contents=query,
-        config={"tools": [{"google_search": {}}]},
+        config={
+            "tools": [{"google_search": {}}],
+            "automatic_function_calling": {"disable": True},
+        },
     )
 
     text = ""

@@ -1,4 +1,4 @@
-﻿import platform as _platform
+import platform as _platform
 import subprocess as _subprocess
 
 # ── Nuclear: force CREATE_NO_WINDOW on EVERY subprocess call on Windows ───────
@@ -205,8 +205,7 @@ TOOL_DECLARATIONS = [
         "name": "screen_process",
         "description": (
             "Captures the screen or webcam image and lets you analyze it. "
-            "MUST be called when user asks what is on screen, what you see, "
-            "look at camera, analyze my screen, etc. "
+            "Call when user asks what is on screen, what you see, look at camera, analyze my screen, etc. "
             "You have NO visual ability without this tool. "
             "After the image is captured it is sent directly to you — describe what you see and answer the user's question. "
             "When using camera: the live view stays open until user says close it or calls close_camera."
@@ -349,6 +348,26 @@ TOOL_DECLARATIONS = [
             "required": [],
         },
     },
+    {
+        "name": "get_swarm_agents",
+        "description": (
+            "Returns the complete catalog of all 33 specialized agents grouped across "
+            "their 5 operational clusters (Core Reasoning, Software Delivery, Founder Productivity, "
+            "Safety & Input Control, and Infrastructure & Health), explaining what each agent is and what it does. "
+            "Call this whenever the user asks 'what are the 33 agents', 'what agents do you have', "
+            "'list your agents', 'what are they', or asks what any of the specialized agents do."
+        ),
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "cluster": {
+                    "type": "STRING",
+                    "description": "Optional cluster filter: 'core', 'software', 'productivity', 'safety', 'health', or 'all' (default: 'all').",
+                },
+            },
+            "required": [],
+        },
+    },
 ]
 
 class _ReconnectSignal(Exception):
@@ -406,11 +425,9 @@ class MaxLive:
         self._vision_last_time     = 0.0     # monotonic time of last screen_process call (cooldown guard)
         self._vision_busy          = False   # True while a vision capture/inject cycle is in flight
         self._interrupted          = False   # True while draining audio after user interrupt
-        self.ui.on_text_command   = self._on_text_command
-        self.ui.on_remote_clicked = self._make_remote_key
-        self.ui.on_interrupt      = self.interrupt
-        self.ui.on_voice_change   = self._on_voice_change     # voice picker → rebuild session
-        self.ui.on_audio_device_change = self._on_audio_device_change
+        self._current_speech_text: str = ""    # Live transcript of what MAX is currently speaking
+        self._last_completed_speech: str = ""  # Last completed turn spoken by MAX
+        self._pending_text_commands: list[str] = []
         self._reconnect_event: asyncio.Event | None = None
         self._reconnect_keep = True   # False → next rebuild drops the resumption handle
 
@@ -440,6 +457,17 @@ class MaxLive:
         self._enhanced_live = True  # proactive audio; auto-disabled if the server rejects it
 
         _base_dir = Path(__file__).resolve().parent
+        from core.budget import BudgetLedger
+        try:
+            _budget_config = json.loads((_base_dir / "config" / "api_keys.json").read_text(encoding="utf-8"))
+        except Exception:
+            _budget_config = {}
+        self._budget = BudgetLedger(
+            _base_dir / "memory" / "api_budget.json",
+            monthly_cap_usd=_budget_config.get("monthly_budget_usd", 0),
+            input_usd_per_million=_budget_config.get("input_usd_per_million", 0),
+            output_usd_per_million=_budget_config.get("output_usd_per_million", 0),
+        )
         _inline_names = {t["name"] for t in TOOL_DECLARATIONS}
 
         # File-backed tools: every actions/*.py with a TOOL dict, discovered the
@@ -470,6 +498,7 @@ class MaxLive:
         self._intent_router = ReflexIntentRouter()
         self._agent_registry = AgentRegistry.get_instance()
         self._task_queue = TaskQueue()
+        self.ui.get_dashboard_snapshot = self._dashboard_snapshot
 
         # ── Wake word ────────────────────────────────────────────────────────
         # _awake gates the mic (see _listen_audio) and the background speakers.
@@ -484,6 +513,17 @@ class MaxLive:
         self.ui.on_wake_toggle   = self._ui_wake_toggle   # (enable: bool) -> str
         self.ui.on_wake_manual   = self._ui_wake_manual   # () -> toggle awake/asleep
         self.ui.on_wake_install  = self._ui_wake_install  # () -> (ok, msg)
+
+        # Wire UI event callbacks last, after all state and services are initialized
+        self.ui.on_text_command        = self._on_text_command
+        self.ui.on_mic_toggle          = self._on_mic_toggle
+        self.ui.on_remote_clicked      = self._make_remote_key
+        self.ui.on_interrupt           = self.interrupt
+        self.ui.on_voice_change        = self._on_voice_change
+        self.ui.on_audio_device_change = self._on_audio_device_change
+
+    def _dashboard_snapshot(self) -> dict:
+        return {"agents": len(self._agent_registry.list_all()), "queued": self._task_queue.size(), "capacity": self._task_queue.max_capacity}
 
     # ── Wake word: state machine ─────────────────────────────────────────────
 
@@ -657,15 +697,20 @@ class MaxLive:
         manual = self._dashboard.get_manual_url()
         return url, key, f"{url}/auto-login?key={key}", manual
 
+    def _on_mic_toggle(self, muted: bool):
+        if not muted and not self._awake:
+            self.wake(reason="microphone turned on")
+
     def _on_text_command(self, text: str):
-        if not self._loop or not self.session:
-            return
-        # Respect wake-word sleep: a typed command must not be answered while
-        # asleep either (the sleep gate is not just for the mic). Wake first with
-        # "Hey MAX" or the WAKE NOW button.
+        # A typed message is an explicit direct interaction: wake MAX immediately
         if self._wake_enabled and not self._awake:
-            self.ui.write_log("SYS: I'm asleep — say 'Hey MAX' or tap WAKE NOW first.")
+            self.wake(reason="text message")
+
+        if not self._loop or not self.session:
+            self._pending_text_commands.append(text)
+            self.ui.write_log("SYS: Connecting to MAX... command queued.")
             return
+
         asyncio.run_coroutine_threadsafe(
             self.session.send_client_content(
                 turns={"role": "user", "parts": [{"text": text}]},
@@ -700,6 +745,24 @@ class MaxLive:
         if self._turn_done_event:
             self._turn_done_event.clear()
         self.ui.write_log("SYS: Interrupted — listening...")
+
+    def drain_audio(self) -> int:
+        """Drain queued audio playback chunks so speech cuts off immediately without breaking the next turn."""
+        q = self.audio_in_queue
+        drained = 0
+        if q:
+            while True:
+                try:
+                    q.get_nowait()
+                    drained += 1
+                except Exception:
+                    break
+            if drained:
+                print(f"[MAX] ⏰ Reminder cut-in — {drained} audio chunks drained")
+        self.set_speaking(False)
+        if self._turn_done_event:
+            self._turn_done_event.clear()
+        return drained
 
     def speak(self, text: str):
         if not self._loop or not self.session:
@@ -806,7 +869,8 @@ class MaxLive:
         name = fc.name
         args = dict(fc.args or {})
 
-        print(f"[MAX] 🔧 {name}  {args}")
+        _logged_args = dict(args)
+        print(f"[MAX] 🔧 {name}  {_logged_args}")
         self.ui.set_state("THINKING")
 
         if name == "save_memory":
@@ -842,6 +906,11 @@ class MaxLive:
                               ) if items else "I have not changed anything I can undo yet."
                 else:
                     result = await loop.run_in_executor(None, undo_stack.undo_last)
+
+            elif name == "get_swarm_agents":
+                cluster = str(args.get("cluster", "all")).lower().strip()
+                result = self._agent_registry.get_swarm_summary(cluster=cluster)
+                self.ui.show_content("33-AGENT SWARM", result)
 
             elif name == "screen_process":
                 import time as _t_mod
@@ -980,6 +1049,8 @@ class MaxLive:
     async def _send_realtime(self):
         while True:
             msg = await self.out_queue.get()
+            if self._budget.exhausted:
+                continue
             # Gemini 3.x Live rejects the old realtime_input.media_chunks field
             # (what `media=...` maps to) and closes the socket with a 1007. Send
             # mic / phone PCM through the new `audio` field instead. Queue items
@@ -1088,7 +1159,14 @@ class MaxLive:
                                 print("[MAX] 🔗 Session resumption armed")
                             self._resume_handle = _sru.new_handle
 
-                    if response.data:
+                    _raw_audio = response.data
+                    if not _raw_audio and response.server_content and response.server_content.model_turn:
+                        for p in response.server_content.model_turn.parts:
+                            if getattr(p, "inline_data", None) and getattr(p.inline_data, "data", None):
+                                _raw_audio = p.inline_data.data
+                                break
+
+                    if _raw_audio:
                         if self._interrupted:
                             pass  # discard: interrupted
                         else:
@@ -1096,18 +1174,35 @@ class MaxLive:
                                 self._turn_done_event.clear()
                             # Split into ~50 ms chunks so interrupt() stops audio within 50 ms
                             # (24000 Hz × 2 bytes/sample × 0.05 s = 2400 bytes per slice)
-                            _audio_data = response.data
+                            _audio_data = _raw_audio
                             _SLICE = 2400
                             for _i in range(0, len(_audio_data), _SLICE):
                                 self.audio_in_queue.put_nowait(_audio_data[_i : _i + _SLICE])
 
                     if response.server_content:
                         sc = response.server_content
+                        usage = getattr(sc, "usage_metadata", None) or getattr(response, "usage_metadata", None)
+                        if usage:
+                            input_count = (getattr(usage, "prompt_token_count", 0)
+                                           or getattr(usage, "input_token_count", 0) or 0)
+                            output_count = (getattr(usage, "candidates_token_count", 0)
+                                            or getattr(usage, "output_token_count", 0) or 0)
+                            estimate = self._budget.record(input_count, output_count)
+                            if self._budget.exhausted:
+                                self.ui.write_log(
+                                    "SYS: Monthly API budget reached. New microphone audio is paused until the limit is changed."
+                                )
+                            if self._dashboard:
+                                asyncio.create_task(self._dashboard.broadcast({
+                                    "type": "budget", "estimated_usd": round(estimate, 6),
+                                    "cap_usd": self._budget.cap,
+                                }))
 
                         if sc.output_transcription and sc.output_transcription.text:
                             txt = _clean_transcript(sc.output_transcription.text)
                             if txt and txt != (out_buf[-1] if out_buf else ""):
                                 out_buf.append(txt)
+                                self._current_speech_text = " ".join(out_buf).strip()
 
                         if sc.input_transcription and sc.input_transcription.text:
                             txt = _clean_transcript(sc.input_transcription.text)
@@ -1123,6 +1218,7 @@ class MaxLive:
                             # flag and skip all further processing for that turn.
                             if self._interrupted:
                                 self._interrupted = False
+                                self._current_speech_text = ""
                                 in_buf  = []
                                 out_buf = []
                                 continue
@@ -1143,12 +1239,14 @@ class MaxLive:
                             if full_out:
                                 self.ui.write_log(f"{self._asst_name}: {full_out}")
                                 self._session_log.append(f"{self._asst_name}: {full_out}")
+                                self._last_completed_speech = full_out
                                 if self._dashboard:
                                     asyncio.create_task(self._dashboard.broadcast({
                                         "type": "log", "speaker": "MAX",
                                         "text": full_out,
                                         "ts": datetime.now().isoformat(),
                                     }))
+                            self._current_speech_text = ""
                             out_buf = []
 
                             # Vision injection: model finished tool-response turn → now send the image
@@ -1228,20 +1326,25 @@ class MaxLive:
             stream = _open_spk(None)
 
         try:
+            _empty_ticks = 0
             while True:
                 try:
                     chunk = await asyncio.wait_for(
                         self.audio_in_queue.get(),
                         timeout=0.1
                     )
+                    _empty_ticks = 0
                 except asyncio.TimeoutError:
+                    _empty_ticks += 1
+                    # Clear speaking lock if turn is complete OR queue has stayed empty for >= 0.5s
                     if (
-                        self._turn_done_event
-                        and self._turn_done_event.is_set()
-                        and self.audio_in_queue.empty()
+                        (self._turn_done_event and self._turn_done_event.is_set() and self.audio_in_queue.empty())
+                        or (_empty_ticks >= 5 and self.audio_in_queue.empty())
                     ):
-                        self.set_speaking(False)
-                        self._turn_done_event.clear()
+                        if self._is_speaking:
+                            self.set_speaking(False)
+                        if self._turn_done_event:
+                            self._turn_done_event.clear()
                     continue
 
                 self.set_speaking(True)
@@ -1434,6 +1537,13 @@ class MaxLive:
             summary = (resp.text or "").strip()
             if summary:
                 save_session_summary(summary, lang)
+                try:
+                    from core.memory.episodes import EpisodeStore
+                    EpisodeStore(Path(__file__).resolve().parent / "memory" / "max_state.db").add(
+                        summary, tags=["session"])
+                except ValueError:
+                    # Sensitive summaries are intentionally excluded from durable recall.
+                    pass
         except Exception as e:
             print(f"[Memory] ⚠️ Session summary failed: {e}")
 
@@ -1491,6 +1601,89 @@ class MaxLive:
                     except Exception as e:
                         print(f"[Monitor] ⚠️ Background check error: {e}")
             await asyncio.sleep(1800)     # check every 30 minutes
+
+    # ── Reminder monitor ────────────────────────────────────────────────────────
+
+    async def _run_reminder_monitor(self) -> None:
+        """Background task: continuously checks for due reminders every second.
+
+        If a reminder hits while MAX is speaking/explaining something:
+        - Drains audio playback immediately so the user hears the reminder with zero delay.
+        - Delivers the reminder to the user.
+        - Instructs Gemini to deliver the reminder and immediately resume telling what it
+          was explaining before the interruption.
+        If MAX is idle or listening, announces the reminder cleanly.
+        """
+        from workers.reminder_worker import ReminderWorker
+        db_path = Path.home() / ".MAX" / "reminders.db"
+        db_path.parent.mkdir(parents=True, exist_ok=True)
+        worker = ReminderWorker(db_path)
+
+        while True:
+            await asyncio.sleep(1.0)
+            if not self.session:
+                continue
+
+            try:
+                due_reminders = await asyncio.to_thread(worker.get_due_reminders)
+                if not due_reminders:
+                    continue
+
+                # If asleep in wake-word mode, wake up to deliver the reminder
+                if self._wake_enabled and not self._awake:
+                    self.wake(reason="scheduled reminder")
+
+                memory = load_memory()
+                lang_e = memory.get("identity", {}).get("language", {})
+                lang   = (lang_e.get("value", "") if isinstance(lang_e, dict) else str(lang_e)).strip() or "English"
+
+                for rem in due_reminders:
+                    # Mark completed immediately in DB so it never repeats
+                    await asyncio.to_thread(worker.complete, rem.id)
+                    msg = rem.text
+
+                    # Visual HUD update
+                    self.ui.show_content("REMINDER DUE", f"⏰ {msg}\n\nTime: {datetime.now().strftime('%H:%M:%S')}")
+                    self.ui.write_log(f"⏰ REMINDER: {msg}")
+
+                    with self._speaking_lock:
+                        speaking = self._is_speaking
+
+                    if speaking:
+                        # MAX was actively speaking when the reminder hit!
+                        interrupted_text = getattr(self, "_current_speech_text", "").strip()
+                        if not interrupted_text:
+                            interrupted_text = getattr(self, "_last_completed_speech", "").strip()
+
+                        # Drain audio queue immediately so speech stops right now
+                        drained = self.drain_audio()
+                        print(f"[Reminder] ⏰ Interrupted speech ({drained} chunks) for reminder: '{msg}'")
+
+                        prompt = (
+                            f"[URGENT_REMINDER_INTERRUPT]\n"
+                            f"A scheduled reminder has hit right now while you were speaking!\n"
+                            f"Reminder: \"{msg}\"\n"
+                            f"What you were saying right before this interruption: \"{interrupted_text}\"\n\n"
+                            f"MANDATORY INSTRUCTIONS:\n"
+                            f"1. State the reminder clearly and politely in {lang} (e.g. 'Excuse me sir, quick reminder: {msg}').\n"
+                            f"2. Right after saying the reminder, smoothly resume and continue telling what you were explaining before the interruption (e.g. 'Now, continuing what I was saying: ...').\n"
+                            f"Never drop or forget what you were explaining. Speak naturally in {lang}."
+                        )
+                    else:
+                        # MAX is idle / listening
+                        prompt = (
+                            f"[REMINDER]\n"
+                            f"A scheduled reminder has just triggered: \"{msg}\".\n"
+                            f"Say this reminder clearly and politely to the user in {lang} (e.g. 'Sir, you asked me to remind you: {msg}')."
+                        )
+
+                    await self.session.send_client_content(
+                        turns={"role": "user", "parts": [{"text": prompt}]},
+                        turn_complete=True,
+                    )
+                    await asyncio.sleep(2.0)
+            except Exception as e:
+                print(f"[Reminder] ⚠️ Background check error: {e}")
 
     # ── Proactive mode ──────────────────────────────────────────────────────────
 
@@ -1653,6 +1846,17 @@ class MaxLive:
                     self.out_queue        = asyncio.Queue(maxsize=200)
                     self._turn_done_event = asyncio.Event()
 
+                    # Send any text commands queued before connection was ready
+                    while self._pending_text_commands:
+                        q_text = self._pending_text_commands.pop(0)
+                        print(f"[MAX] 📤 Sending queued text command: {q_text}")
+                        tg.create_task(
+                            self.session.send_client_content(
+                                turns={"role": "user", "parts": [{"text": q_text}]},
+                                turn_complete=True,
+                            )
+                        )
+
                     # Reset transient state that must not carry over from a previous session
                     self._pending_vision       = None
                     self._vision_cam_active    = False
@@ -1692,6 +1896,7 @@ class MaxLive:
                     tg.create_task(self._run_system_monitor())
                     tg.create_task(self._run_background_monitor())
                     tg.create_task(self._run_proactive_mode())
+                    tg.create_task(self._run_reminder_monitor())
                     tg.create_task(self._run_sleep_watch())
                     if self._dashboard:
                         tg.create_task(self._relay_phone_audio())
@@ -1761,7 +1966,7 @@ class MaxLive:
                     continue
 
                 # Invalid API key — stop hammering the API, prompt re-configuration
-                if "API key not valid" in err_str or "1007" in err_str:
+                if "API key not valid" in err_str or "API_KEY_INVALID" in err_str:
                     self.ui.write_log("ERR: API key invalid — please re-enter your key.")
                     self.ui.set_state("SLEEPING")
                     self.ui.prompt_reconfig()

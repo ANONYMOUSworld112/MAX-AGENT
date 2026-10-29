@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import logging
 from enum import Enum
-from typing import Dict, Set
+from typing import Dict, Optional, Set
 
 logger = logging.getLogger("max.infra.task_lifecycle")
 

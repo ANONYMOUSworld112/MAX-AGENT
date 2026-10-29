@@ -1,4 +1,4 @@
-﻿#computer_control.py
+#computer_control.py
 import io
 import json
 import platform
@@ -13,6 +13,7 @@ else:
     _WIN_HIDE: dict = {}
 import time
 import random
+import threading
 from pathlib import Path
 
 try:
@@ -38,6 +39,7 @@ def _base_dir() -> Path:
 _BASE         = _base_dir()
 _CONFIG_PATH  = _BASE / "config" / "api_keys.json"
 _MEMORY_PATH  = _BASE / "memory" / "long_term.json"
+_TYPE_LOCK = threading.Lock()
 
 def _load_config() -> dict:
     try:
@@ -154,10 +156,74 @@ def _user_profile() -> dict:
         pass
     return {}
 
-def _type(text: str, interval: float = 0.03) -> str:
+def _send_unicode_windows(text: str) -> None:
+    """Send Unicode text as Windows keyboard input (never via the clipboard)."""
+    if platform.system() != "Windows":
+        raise RuntimeError("Direct Unicode keyboard typing is supported on Windows only.")
+    import ctypes
+    from ctypes import wintypes
+
+    extra_info_type = getattr(wintypes, "ULONG_PTR", ctypes.c_size_t)
+
+    class KEYBDINPUT(ctypes.Structure):
+        _fields_ = [("wVk", wintypes.WORD), ("wScan", wintypes.WORD),
+                    ("dwFlags", wintypes.DWORD), ("time", wintypes.DWORD),
+                    ("dwExtraInfo", extra_info_type)]
+
+    class MOUSEINPUT(ctypes.Structure):
+        _fields_ = [("dx", wintypes.LONG), ("dy", wintypes.LONG),
+                    ("mouseData", wintypes.DWORD), ("dwFlags", wintypes.DWORD),
+                    ("time", wintypes.DWORD), ("dwExtraInfo", extra_info_type)]
+
+    class INPUTUNION(ctypes.Union):
+        _fields_ = [("mi", MOUSEINPUT), ("ki", KEYBDINPUT)]
+
+    class INPUT(ctypes.Structure):
+        _anonymous_ = ("value",)
+        _fields_ = [("type", wintypes.DWORD), ("value", INPUTUNION)]
+
+    events = []
+    for unit in (int.from_bytes(text.encode("utf-16-le")[i:i + 2], "little")
+                 for i in range(0, len(text.encode("utf-16-le")), 2)):
+        events.append(INPUT(1, INPUTUNION(ki=KEYBDINPUT(0, unit, 0x0004, 0, 0))))
+        events.append(INPUT(1, INPUTUNION(ki=KEYBDINPUT(0, unit, 0x0004 | 0x0002, 0, 0))))
+    inputs = (INPUT * len(events))(*events)
+    send_input = ctypes.windll.user32.SendInput
+    send_input.argtypes = (wintypes.UINT, ctypes.POINTER(INPUT), ctypes.c_int)
+    send_input.restype = wintypes.UINT
+    sent = send_input(len(events), inputs, ctypes.sizeof(INPUT))
+    if sent != len(events):
+        raise ctypes.WinError(ctypes.get_last_error())
+
+
+def _type(text: str, interval: float = 0.005) -> str:
+    """Send text as keyboard input, without clipboard use or long per-key pauses."""
     _require_pyautogui()
-    time.sleep(0.3)
-    pyautogui.typewrite(text, interval=interval)
+    text = str(text or "")
+    normalized = text.replace("\r\n", "\n").replace("\r", "\n")
+    # PyAutoGUI applies its global PAUSE after every key. Temporarily disable it
+    # during this locked typing operation, then restore the app's setting.
+    with _TYPE_LOCK:
+        old_pause = getattr(pyautogui, "PAUSE", None)
+        try:
+            if old_pause is not None:
+                pyautogui.PAUSE = 0
+            for part in re.split(r"([\n\t])", normalized):
+                if part == "\n":
+                    pyautogui.press("enter")
+                elif part == "\t":
+                    pyautogui.press("tab")
+                elif part:
+                    for segment in re.split(r"([^\x00-\x7f])", part):
+                        if not segment:
+                            continue
+                        if segment.isascii():
+                            pyautogui.typewrite(segment, interval=interval)
+                        else:
+                            _send_unicode_windows(segment)
+        finally:
+            if old_pause is not None:
+                pyautogui.PAUSE = old_pause
     return f"Typed: {text[:60]}{'…' if len(text) > 60 else ''}"
 
 
@@ -165,16 +231,7 @@ def _smart_type(text: str, clear_first: bool = True) -> str:
     _require_pyautogui()
     if clear_first:
         _clear_field()
-        time.sleep(0.1)
-
-    if len(text) > 20 and _PYPERCLIP:
-        pyperclip.copy(text)
-        time.sleep(0.1)
-        paste_key = "command" if _get_os() == "mac" else "ctrl"
-        pyautogui.hotkey(paste_key, "v")
-        return f"Smart-typed (clipboard): {text[:60]}{'…' if len(text) > 60 else ''}"
-
-    pyautogui.typewrite(text, interval=0.04)
+    _type(text)
     return f"Smart-typed: {text[:60]}{'…' if len(text) > 60 else ''}"
 
 
@@ -384,7 +441,7 @@ def computer_control(
 
     Actions:
       type          — type text at cursor
-      smart_type    — clear field + type (clipboard-backed)
+      smart_type    — clear field + type with keyboard input
       click         — left click
       double_click  — double left click
       right_click   — right click
@@ -413,7 +470,8 @@ def computer_control(
     if player:
         player.write_log(f"[Computer] {action}")
 
-    print(f"[ComputerControl] ▶ {action}  {params}")
+    _log_params = {key: (f"[omitted: {len(str(value))} chars]" if key == "text" else value) for key, value in params.items()}
+    print(f"[ComputerControl] ▶ {action}  {_log_params}")
 
     try:
 
@@ -517,17 +575,17 @@ def computer_control(
 # ── Tool declaration (auto-discovered by core/action_loader.py) ──────────────
 TOOL = {
     "name": "computer_control",
-    "description": "Direct computer control: type, click, hotkeys, scroll, move mouse, screenshots, find elements on screen.",
+    "description": "Direct computer control. For user requests to type or write text on screen, use type to enter at the caret with keyboard input. Use smart_type only when the user asks to replace the focused field. Both send keyboard input and never use the clipboard. Use paste only when the user explicitly asks to paste.",
     "parameters": {
         "type": "OBJECT",
         "properties": {
             "action": {
                 "type": "STRING",
-                "description": "type | smart_type | click | double_click | right_click | hotkey | press | scroll | move | copy | paste | screenshot | wait | clear_field | focus_window | screen_find | screen_click | random_data | user_data"
+                "description": "type (type at caret) | smart_type (replace field) | click | double_click | right_click | hotkey | press | scroll | move | copy | paste | screenshot | wait | clear_field | focus_window | screen_find | screen_click | random_data | user_data. type/smart_type send keyboard input; paste uses the clipboard and is only for explicit paste requests."
             },
             "text": {
                 "type": "STRING",
-                "description": "Text to type or paste"
+                "description": "Text for the selected action. type/smart_type use keyboard input; paste uses the clipboard."
             },
             "x": {
                 "type": "INTEGER",

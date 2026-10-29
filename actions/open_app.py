@@ -13,18 +13,11 @@ import platform
 import shutil
 import subprocess
 import time
-from typing import Any, Dict, Optional
 
 from core.adapters import get_desktop_adapter
 from core.app_registry import ApplicationRegistry, AppSignature
 
 logger = logging.getLogger("max.actions.open_app")
-
-try:
-    import psutil
-    _PSUTIL = True
-except ImportError:
-    _PSUTIL = False
 
 _SYSTEM = platform.system()
 _REGISTRY = ApplicationRegistry()
@@ -92,38 +85,42 @@ def _normalize(raw: str) -> str:
     return raw
 
 
-def _is_process_running(signature: AppSignature) -> bool:
-    """Verify if a process matching the app signature is currently running."""
-    if _PSUTIL:
-        for p in psutil.process_iter(attrs=["name", "pid"]):
-            try:
-                pname = p.info.get("name") or ""
-                for expected in signature.process_names:
-                    if pname.lower() == expected.lower():
-                        return True
-            except (psutil.NoSuchProcess, psutil.AccessDenied):
-                continue
-
-    # Window adapter fallback
+def _is_app_window_open(signature: AppSignature) -> bool:
+    """Require a visible window match before reporting that an app opened."""
     adapter = get_desktop_adapter()
     windows = adapter.list_windows()
     for win in windows:
+        if win.get("is_visible") is False:
+            continue
         w_title = win.get("title", "").lower()
         w_proc = win.get("process_name", "").lower()
+        if signature.process_names and w_proc:
+            if any(expected.lower() == w_proc for expected in signature.process_names):
+                return True
+            continue
         for pat in signature.window_title_patterns:
             if pat.lower() in w_title:
-                return True
-        for expected in signature.process_names:
-            if expected.lower() in w_proc:
                 return True
 
     return False
 
 
 def _launch_signature(signature: AppSignature) -> bool:
-    """Launch application via executable path, UWP protocol, or desktop adapter."""
+    """Launch an installed app through Windows Search or a native executable."""
+    if _SYSTEM == "Windows":
+        adapter = get_desktop_adapter()
+        if not adapter.hotkey("win", "s"):
+            return False
+        time.sleep(0.6)
+        if not adapter.hotkey("ctrl", "a"):
+            return False
+        if not adapter.type_text(signature.name):
+            return False
+        time.sleep(0.4)
+        return adapter.hotkey("enter")
+
     # 1. Check UWP URI (e.g. calculator:)
-    if signature.is_uwp_uri and _SYSTEM == "Windows":
+    if signature.is_uwp_uri:
         try:
             os.startfile(signature.uwp_uri)
             return True
@@ -145,18 +142,6 @@ def _launch_signature(signature: AppSignature) -> bool:
             except Exception as exc:
                 logger.error("Failed to spawn %s: %s", bin_path, exc)
 
-    # 3. Desktop Adapter hotkey/run fallback
-    if _SYSTEM == "Windows":
-        adapter = get_desktop_adapter()
-        # Safe Run Dialog launch (Win+R)
-        adapter.hotkey("win", "r")
-        time.sleep(0.3)
-        target_cmd = signature.executables[0] if signature.executables else signature.name
-        adapter.type_text(target_cmd)
-        time.sleep(0.2)
-        adapter.hotkey("enter")
-        return True
-
     return False
 
 
@@ -173,46 +158,51 @@ def open_app(
 
     sig = _REGISTRY.resolve(app_name)
     if sig is None:
-        return f"Application '{app_name}' not found. It is not registered and does not exist on the system."
+        if _REGISTRY.resolution_issue:
+            return f"I found more than one app matching '{app_name}'. {_REGISTRY.resolution_issue}. Please name the app more specifically."
+        if not _REGISTRY.inventory_available:
+            return (
+                f"I couldn't check whether '{app_name}' is installed because the Windows app "
+                f"inventory failed. {_REGISTRY.inventory_error}"
+            )
+        return f"Application '{app_name}' is not present in the installed apps found on this system."
 
     logger.info("Resolved '%s' to application signature '%s'", app_name, sig.name)
     if player:
         player.write_log(f"[open_app] Launching {sig.name}...")
 
     # Check if already running
-    if _is_process_running(sig):
+    if _is_app_window_open(sig):
         return f"Application '{app_name}' is already running."
 
     # Launch application
     launched = _launch_signature(sig)
     if not launched:
-        return f"Failed to execute launch command for '{app_name}'."
+        return f"I couldn't send the Windows Search launch input for '{app_name}'. It was not opened."
 
-    # L3 Verification Loop (poll up to 3 seconds)
+    # L3 Verification Loop. Cold app startups can take several seconds.
     start_t = time.time()
-    while time.time() - start_t < 3.0:
-        if _is_process_running(sig):
-            return f"Opened {app_name} (verified: process running)."
+    while time.time() - start_t < 8.0:
+        if _is_app_window_open(sig):
+            return f"Opened {app_name} (verified: visible app window)."
         time.sleep(0.3)
 
-    # In fake/mock testing or CI where headless, verify adapter dispatch
-    adapter = get_desktop_adapter()
-    if hasattr(adapter, "calls") and adapter.calls:
-        return f"Opened {app_name}."
-
-    return f"Launched command for '{app_name}', but process did not appear within timeout (unverified)."
+    return (
+        f"I sent the launch request for '{app_name}', but could not verify that it opened. "
+        "I can't confirm it launched."
+    )
 
 
 # ── Tool declaration (auto-discovered by core/action_loader.py) ──────────────
 TOOL = {
     "name": "open_app",
-    "description": "Opens any application on the computer with post-launch process verification.",
+    "description": "Whenever asked to open, launch, or start an app, always use this action. On Windows, check the current Search inventory and launch through Windows Search. Report success only after a matching visible app window is observed; otherwise say it could not be verified and may not have opened. If the inventory cannot be read, report that instead of guessing.",
     "parameters": {
         "type": "OBJECT",
         "properties": {
             "app_name": {
                 "type": "STRING",
-                "description": "Exact name of the application (e.g. 'VS Code', 'Chrome', 'Calculator')",
+                "description": "Application name as shown in Windows Search (e.g. 'VS Code', 'Chrome', 'Calculator')",
             }
         },
         "required": [

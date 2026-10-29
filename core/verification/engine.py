@@ -204,26 +204,7 @@ class VerificationEngine:
                 timeout=timeout,
             )
 
-        # 2. If the request explicitly requested verification
-        if params.get("verify") is True:
-            if action in ("launch_app", "open_app"):
-                app_name = params.get("app_name") or params.get("name")
-                if app_name:
-                    timeout = float(params.get("verify_timeout", 2.0))
-                    return poll_until(
-                        lambda: self.process_verifier.verify_process_running(app_name),
-                        timeout=timeout,
-                    )
-            if action in ("file_write", "create_file", "write_file"):
-                path = params.get("path") or params.get("file_path")
-                if path:
-                    content = params.get("content")
-                    if content and isinstance(content, str):
-                        snippet = content[:64] if len(content) > 64 else content
-                        return self.file_verifier.verify_file_content(path, snippet)
-                    return self.file_verifier.verify_files_exist([path])
-
-        # 3. If output already contains verification details from adapter/handler
+        # 2. If output already contains verification details from adapter/handler
         if isinstance(output, dict):
             if output.get("verified") is True:
                 return VerificationReport(
@@ -245,6 +226,25 @@ class VerificationEngine:
                     details={"output": output},
                     errors=[str(output.get("error"))],
                 )
+
+        # 3. If the request explicitly requested verification
+        if params.get("verify") is True:
+            if action in ("launch_app", "open_app"):
+                app_name = params.get("app_name") or params.get("name")
+                if app_name:
+                    timeout = float(params.get("verify_timeout", 2.0))
+                    return poll_until(
+                        lambda: self.process_verifier.verify_process_running(app_name),
+                        timeout=timeout,
+                    )
+            if action in ("file_write", "create_file", "write_file"):
+                path = params.get("path") or params.get("file_path")
+                if path:
+                    content = params.get("content")
+                    if content and isinstance(content, str):
+                        snippet = content[:64] if len(content) > 64 else content
+                        return self.file_verifier.verify_file_content(path, snippet)
+                    return self.file_verifier.verify_files_exist([path])
 
         if action in ("run_command", "exec_command", "run_test"):
             # Check exit code in output if present

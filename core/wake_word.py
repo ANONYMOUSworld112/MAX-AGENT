@@ -1,4 +1,4 @@
-﻿"""
+"""
 Local wake-word detection for MAX ("Hey MAX").
 
 Design goals:
@@ -178,9 +178,9 @@ class WakeWordDetector:
                 scores = self._model.predict(np.asarray(frame, dtype=np.int16))
                 score = 0.0
                 if isinstance(scores, dict):
-                    # match the MAX model regardless of exact key suffix
                     for k, v in scores.items():
-                        if "MAX" in k.lower():
+                        kl = k.lower()
+                        if "max" in kl or "jarvis" in kl or "hey" in kl:
                             score = max(score, float(v))
                     if score == 0.0 and scores:
                         score = max(float(v) for v in scores.values())

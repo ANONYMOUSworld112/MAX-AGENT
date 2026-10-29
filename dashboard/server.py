@@ -86,6 +86,8 @@ def _decrypt_cbc(aes_key: bytes, enc_b64: str) -> str:
     from cryptography.hazmat.primitives import padding as sym_pad
     raw      = base64.b64decode(enc_b64)
     iv, ct   = raw[:16], raw[16:]
+    cipher   = Cipher(algorithms.AES(aes_key), modes.CBC(iv))
+    dec      = cipher.decryptor()
     padded   = dec.update(ct) + dec.finalize()
     unpadder = sym_pad.PKCS7(128).unpadder()
     return (unpadder.update(padded) + unpadder.finalize()).decode('utf-8')
@@ -470,6 +472,8 @@ class DashboardServer:
                 return JSONResponse({"error": "Unauthorized"}, status_code=401)
             body  = await req.json()
             token = req.headers.get("authorization", "").removeprefix("Bearer ").strip()
+            if not token:
+                token = req.headers.get("x-max-token", "").strip()
             enc   = body.get("enc", "")
             if enc:
                 text = self._decrypt(token, enc)
@@ -730,3 +734,15 @@ class DashboardServer:
         await uvicorn.Server(cfg).serve()
 
 
+_default_server: DashboardServer | None = None
+
+
+def get_app() -> "FastAPI":
+    global _default_server
+    if _default_server is None:
+        _default_server = DashboardServer()
+    return _default_server.app
+
+
+if _DEPS_OK:
+    app = get_app()

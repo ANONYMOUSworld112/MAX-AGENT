@@ -62,7 +62,18 @@ class ReflexIntentRouter:
         lane = LaneType.LANE_B if is_modifying or lane_str == "LANE_B" else LaneType.LANE_A
 
         # 2. Agent selection
-        if any(w in text_lower for w in ["code", "refactor", "function", "fix bug", "pytest", "python"]):
+        is_web_task = any(w in text_lower for w in [
+            "browser", "website", "web page", "webpage", "browse", "scrape",
+            "navigate to", "open link", "search online", "find on website",
+            "click link", "click on the page",
+        ]) or (
+            "click" in text_lower
+            and any(w in text_lower for w in ["web", "website", "page", "link", "browser"])
+        )
+        if is_web_task:
+            cluster = "input"
+            target_agent = "BrowserAgent"
+        elif any(w in text_lower for w in ["code", "refactor", "function", "fix bug", "pytest", "python"]):
             cluster = "software"
             target_agent = "PolyglotDeveloper"
         elif any(w in text_lower for w in ["schedule", "meeting", "calendar", "event"]):

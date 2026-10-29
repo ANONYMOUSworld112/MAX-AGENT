@@ -5,7 +5,7 @@ Tests ReflexGuardrails, ReflexIntentRouter, and AgentRegistry.
 from core.reflex.guardrails import ReflexGuardrails, RiskTier
 from core.reflex.intent_router import ReflexIntentRouter, LaneType
 from agents.router import AgentRegistry
-from agents.base import AgentInput
+from agents.base import AgentInput, BaseAgent
 import pytest
 
 
@@ -65,7 +65,7 @@ def test_agent_registry_contains_33_agents():
 
 
 def test_agent_stub_execution_behavior():
-    """Verifies that unimplemented agent stubs raise NotImplementedError (Rule 1-H1 Honesty)."""
+    """Verifies that implemented agents succeed and unimplemented agent stubs raise NotImplementedError (Rule 1-H1 Honesty)."""
     registry = AgentRegistry.get_instance()
     cal_agent = registry.get("calendaragent")
 
@@ -74,5 +74,12 @@ def test_agent_stub_execution_behavior():
         task_description="Schedule meeting with Alice tomorrow at 3pm",
         parameters={"title": "Alice sync", "start_time": "2026-10-01T15:00:00"},
     )
+    res = cal_agent.run(inp)
+    assert res.success is True
+
+    class UnimplementedAgent(BaseAgent):
+        name = "UnimplementedAgent"
+
+    stub = UnimplementedAgent()
     with pytest.raises(NotImplementedError):
-        cal_agent.run(inp)
+        stub.run(inp)

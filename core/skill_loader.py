@@ -100,15 +100,18 @@ class SkillLoader:
         if not name or not description:
             return None
 
+        metadata = data.get("metadata", {})
+        if not isinstance(metadata, dict):
+            metadata = {}
         return SkillPackage(
             name=name,
             description=description,
-            version=str(data.get("version", "1.0.0")),
-            action=data.get("action", name),
-            parameters_schema=data.get("parameters", {}),
-            preconditions=data.get("preconditions", []),
-            postconditions=data.get("postconditions", []),
-            verification=data.get("verification", {}),
+            version=str(data.get("version", metadata.get("version", "1.0.0"))),
+            action=data.get("action", metadata.get("action", name)),
+            parameters_schema=data.get("parameters", metadata.get("parameters", {})),
+            preconditions=data.get("preconditions", metadata.get("preconditions", [])),
+            postconditions=data.get("postconditions", metadata.get("postconditions", [])),
+            verification=data.get("verification", metadata.get("verification", {})),
             instructions=body,
             skill_dir=md_path.parent,
         )

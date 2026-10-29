@@ -1,561 +1,1991 @@
-﻿<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html>
+<html class="dark" lang="en" data-theme="mono">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MAX Dashboard</title>
-  <script src="/static/crypto.js"></script>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <meta content="web_dashboard" name="shell-type"/>
+  <title>MAX OS // CYBERBLACK v4.8</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet"/>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Optional Crypto-JS for AES-256-CBC -->
+  <script src="/static/crypto-js.min.js" onerror="console.warn('CryptoJS local not loaded, fallback to plain/demo mode')"></script>
+
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            display: ['"Space Grotesk"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
+          },
+          colors: {
+            cyber: {
+              black: "#060608",
+              surface: "#0f0f13",
+              surfaceHigh: "#16161c",
+              surfaceElevated: "#1d1d24",
+              border: "rgba(255, 255, 255, 0.12)",
+              borderHover: "rgba(255, 255, 255, 0.25)",
+            }
+          }
+        }
+      }
+    };
+  </script>
+
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    /* ── BASE CSS VARIABLES FOR DYNAMIC THEME SYSTEM ── */
     :root {
-      --bg:      #090909;
-      --surface: rgba(255,255,255,0.045);
-      --border:  rgba(255,255,255,0.11);
-      --accent:  #f2f2f2;
-      --adim:    rgba(255,255,255,0.075);
-      --text:    #f2f2f2;
-      --muted:   #929292;
-      --green:   #d8d8d8;
-      --gdim:    rgba(255,255,255,0.07);
-    }
-    html, body {
-      height: 100%; background: var(--bg); color: var(--text);
-      font-family: Inter, 'Space Grotesk', Manrope, 'Plus Jakarta Sans', 'IBM Plex Sans', 'DM Sans', Sora, Outfit, Geist, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      display: flex; flex-direction: column; overflow: hidden;
+      /* Main Default Theme: Pure Cyber Black & White */
+      --theme-name: 'mono';
+      --theme-accent: #ffffff;
+      --theme-accent-dim: rgba(255, 255, 255, 0.72);
+      --theme-accent-soft: rgba(255, 255, 255, 0.12);
+      --theme-glow: rgba(255, 255, 255, 0.28);
+      --theme-surface-glow: rgba(255, 255, 255, 0.04);
+      --theme-border-accent: rgba(255, 255, 255, 0.45);
+      --theme-text-accent: #ffffff;
+      --theme-badge-bg: #ffffff;
+      --theme-badge-text: #050505;
+
+      --bg-core: #070709;
+      --bg-surface: #0e0e12;
+      --bg-surface-high: #15151a;
+      --bg-surface-elevated: #1c1c22;
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-medium: rgba(255, 255, 255, 0.14);
+      --border-bright: rgba(255, 255, 255, 0.28);
+      --text-primary: #f5f5f7;
+      --text-secondary: #9e9ea7;
+      --text-muted: #65656e;
     }
 
-    /* ── HEADER ── */
-    header {
-      flex-shrink: 0; display: flex; align-items: center; gap: 10px;
-      padding: 12px 16px; border-bottom: 1px solid var(--border);
-      background: rgba(9,9,9,0.96);
+    /* THEME 1: MONO (Pure Black & Titanium White - Main Theme) */
+    [data-theme="mono"] {
+      --theme-name: 'mono';
+      --theme-accent: #ffffff;
+      --theme-accent-dim: rgba(255, 255, 255, 0.75);
+      --theme-accent-soft: rgba(255, 255, 255, 0.12);
+      --theme-glow: rgba(255, 255, 255, 0.32);
+      --theme-surface-glow: rgba(255, 255, 255, 0.05);
+      --theme-border-accent: rgba(255, 255, 255, 0.45);
+      --theme-text-accent: #ffffff;
+      --theme-badge-bg: #ffffff;
+      --theme-badge-text: #060608;
     }
-    .logo { font-size: 15px; font-weight: 700; letter-spacing: 6px; }
-    .logo em { color: var(--accent); font-style: normal; }
-    .pill {
-      display: flex; align-items: center; gap: 6px; padding: 4px 11px;
-      border-radius: 99px; background: var(--surface); border: 1px solid var(--border);
-      font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
-      color: var(--muted); transition: all 0.3s;
-    }
-    .pill.on { background: var(--gdim); border-color: rgba(255,255,255,0.24); color: var(--green); }
-    .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); transition: background 0.3s; }
-    .pill.on .dot { background: var(--green); animation: blink 2s infinite; }
-    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.4} }
-    .spacer { flex: 1; }
-    .enc-badge {
-      font-size: 9px; font-weight: 700; letter-spacing: 1.5px; padding: 3px 8px;
-      border-radius: 4px; display: none;
-    }
-    .enc-badge.on  { display: block; background: var(--gdim); border: 1px solid var(--border); color: var(--green); }
-    .enc-badge.off { display: block; background: var(--surface); border: 1px solid var(--border); color: var(--muted); }
-    .url { font-size: 10px; font-family: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Consolas, monospace; color: var(--muted); padding: 4px 9px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; }
 
-    /* ── FEED ── */
-    main { flex: 1; overflow-y: auto; padding: 14px 16px 8px; display: flex; flex-direction: column; gap: 10px; }
-    main::-webkit-scrollbar { width: 3px; }
-    main::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-    .msg { max-width: 82%; padding: 10px 14px; border-radius: 14px; font-size: 14px; line-height: 1.55; animation: pop 0.18s ease; }
-    @keyframes pop { from { opacity:0; transform:translateY(4px); } }
-    .msg-j   { align-self:flex-start; background:var(--adim);   border:1px solid var(--border); border-bottom-left-radius:4px; }
-    .msg-u   { align-self:flex-end;   background:var(--surface); border:1px solid var(--border);        border-bottom-right-radius:4px; }
-    .msg-sys { align-self:center; font-size:11px; color:var(--muted); padding:2px 0; background:transparent; border:none; letter-spacing:0.3px; }
-    .lbl { font-size:9px; font-weight:700; letter-spacing:2px; text-transform:uppercase; opacity:0.45; margin-bottom:4px; }
-    .msg-j .lbl { color:var(--accent); }
-    .msg-u .lbl { color:var(--muted); text-align:right; }
+    /* THEME 2: CYBER CYAN (Electric Blue) */
+    [data-theme="cyan"] {
+      --theme-name: 'cyan';
+      --theme-accent: #00f0ff;
+      --theme-accent-dim: rgba(0, 240, 255, 0.8);
+      --theme-accent-soft: rgba(0, 240, 255, 0.12);
+      --theme-glow: rgba(0, 240, 255, 0.4);
+      --theme-surface-glow: rgba(0, 240, 255, 0.07);
+      --theme-border-accent: rgba(0, 240, 255, 0.5);
+      --theme-text-accent: #00f0ff;
+      --theme-badge-bg: #00f0ff;
+      --theme-badge-text: #001518;
+    }
 
-    /* ── FILE CARD ── */
-    .msg-file {
-      align-self: flex-end;
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 14px; border-bottom-right-radius: 4px;
-      padding: 11px 14px; display: flex; align-items: center; gap: 12px;
-      max-width: 82%; animation: pop 0.18s ease;
+    /* THEME 3: MATRIX EMERALD (Phosphor Acid Green) */
+    [data-theme="emerald"] {
+      --theme-name: 'emerald';
+      --theme-accent: #00ff66;
+      --theme-accent-dim: rgba(0, 255, 102, 0.8);
+      --theme-accent-soft: rgba(0, 255, 102, 0.12);
+      --theme-glow: rgba(0, 255, 102, 0.4);
+      --theme-surface-glow: rgba(0, 255, 102, 0.07);
+      --theme-border-accent: rgba(0, 255, 102, 0.5);
+      --theme-text-accent: #00ff66;
+      --theme-badge-bg: #00ff66;
+      --theme-badge-text: #001908;
     }
-    .fc-icon { font-size: 26px; flex-shrink: 0; }
-    .fc-meta { flex: 1; min-width: 0; }
-    .fc-lbl  { font-size:9px; font-weight:700; letter-spacing:2px; text-transform:uppercase; opacity:0.45; color:var(--muted); margin-bottom:4px; }
-    .fc-name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .fc-size { font-size: 11px; color: var(--muted); margin-top: 2px; }
-    .fc-bar-wrap { height: 3px; background: var(--border); border-radius: 2px; margin-top: 7px; overflow: hidden; }
-    .fc-bar { height: 100%; width: 0%; background: var(--accent); border-radius: 2px; transition: width 0.12s linear; }
-    .fc-status { font-size: 10px; font-weight: 700; letter-spacing: 1px; flex-shrink: 0; color: var(--muted); }
-    .fc-status.done { color: var(--green); }
-    .fc-status.err  { color: var(--text); }
-    .fc-dl { display:block; margin-top:6px; font-size:11px; color:var(--accent); text-decoration:none; font-weight:600; }
-    .fc-dl:hover { opacity: 0.8; }
 
-    /* ── FOOTER ── */
-    footer { flex-shrink:0; padding:10px 14px; border-top:1px solid var(--border); background:rgba(9,9,9,0.96); display:flex; gap:8px; align-items:center; }
-    #inp { flex:1; padding:11px 14px; background:var(--surface); border:1.5px solid var(--border); border-radius:12px; color:var(--text); font-size:14px; outline:none; transition:border-color 0.15s; }
-    #inp:focus { border-color: var(--accent); }
-    #inp::placeholder { color: var(--muted); }
-    .btn { padding:11px 15px; border:none; border-radius:12px; font-size:11px; font-weight:700; letter-spacing:1.5px; cursor:pointer; transition:opacity 0.15s,transform 0.1s; }
-    .btn:active { transform: scale(0.96); }
-    .btn:hover  { opacity: 0.82; }
-    .btn-send { background: var(--accent); color: #090909; }
-    .btn-wake { background:var(--surface); border:1px solid var(--border); color:var(--muted); display:none; }
-    .btn-wake.show { display:block; color:var(--green); border-color:var(--border); }
-    .btn-attach {
-      background: var(--surface); border: 1px solid var(--border); color: var(--muted);
-      padding: 11px 13px; font-size: 16px; line-height: 1; border-radius: 12px;
-      cursor: pointer; transition: opacity 0.15s, transform 0.1s; display: flex;
-      align-items: center; justify-content: center; flex-shrink: 0;
+    /* THEME 4: SOLAR AMBER (Cyber Gold / Flare) */
+    [data-theme="amber"] {
+      --theme-name: 'amber';
+      --theme-accent: #ffb703;
+      --theme-accent-dim: rgba(255, 183, 3, 0.8);
+      --theme-accent-soft: rgba(255, 183, 3, 0.12);
+      --theme-glow: rgba(255, 183, 3, 0.4);
+      --theme-surface-glow: rgba(255, 183, 3, 0.07);
+      --theme-border-accent: rgba(255, 183, 3, 0.5);
+      --theme-text-accent: #ffb703;
+      --theme-badge-bg: #ffb703;
+      --theme-badge-text: #191200;
     }
-    .btn-attach:hover  { opacity: 0.82; border-color: var(--accent); color: var(--accent); }
-    .btn-attach:active { transform: scale(0.96); }
 
-    /* ── MIC BUTTON ── */
-    #mic-btn {
-      background: var(--surface); border: 1px solid var(--border); color: var(--muted);
-      padding: 11px 13px; font-size: 16px; line-height: 1; border-radius: 12px;
-      cursor: pointer; transition: opacity 0.15s, transform 0.1s, background 0.2s, border-color 0.2s;
-      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    /* THEME 5: HYPER VIOLET (Neon Purple / Void) */
+    [data-theme="violet"] {
+      --theme-name: 'violet';
+      --theme-accent: #c084fc;
+      --theme-accent-dim: rgba(192, 132, 252, 0.8);
+      --theme-accent-soft: rgba(192, 132, 252, 0.12);
+      --theme-glow: rgba(192, 132, 252, 0.4);
+      --theme-surface-glow: rgba(192, 132, 252, 0.07);
+      --theme-border-accent: rgba(192, 132, 252, 0.5);
+      --theme-text-accent: #c084fc;
+      --theme-badge-bg: #c084fc;
+      --theme-badge-text: #170026;
     }
-    #mic-btn:hover  { opacity: 0.82; border-color: var(--accent); color: var(--accent); }
-    #mic-btn:active { transform: scale(0.96); }
-    #mic-btn.recording {
-      background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.28); color: #f2f2f2;
-      animation: mic-pulse 1s ease-in-out infinite;
-    }
-    #mic-btn.unsupported { opacity: 0.3; cursor: not-allowed; }
-    @keyframes mic-pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.65;transform:scale(0.97)} }
 
-    /* ── TOAST ── */
-    #toast {
-      position:fixed; top:66px; left:50%; transform:translateX(-50%) translateY(-8px);
-      background:rgba(255,255,255,0.09); border:1px solid rgba(255,255,255,0.22);
-      color:var(--green); font-size:12px; font-weight:700; letter-spacing:1px;
-      padding:7px 18px; border-radius:99px;
-      opacity:0; transition:opacity 0.22s,transform 0.22s;
-      pointer-events:none; white-space:nowrap;
+    /* THEME 6: CRIMSON PROTOCOL (Blood Red / Akira Alert) */
+    [data-theme="crimson"] {
+      --theme-name: 'crimson';
+      --theme-accent: #ff3366;
+      --theme-accent-dim: rgba(255, 51, 102, 0.8);
+      --theme-accent-soft: rgba(255, 51, 102, 0.12);
+      --theme-glow: rgba(255, 51, 102, 0.4);
+      --theme-surface-glow: rgba(255, 51, 102, 0.07);
+      --theme-border-accent: rgba(255, 51, 102, 0.5);
+      --theme-text-accent: #ff3366;
+      --theme-badge-bg: #ff3366;
+      --theme-badge-text: #230008;
     }
-    #toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+    /* Scrollbars */
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.2);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.14);
+      border-radius: 99px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--theme-accent-dim);
+    }
+
+    /* Custom utility classes referencing CSS variables */
+    .theme-accent-bg { background-color: var(--theme-accent); }
+    .theme-accent-text { color: var(--theme-accent); }
+    .theme-accent-border { border-color: var(--theme-border-accent); }
+    .theme-accent-soft-bg { background-color: var(--theme-accent-soft); }
+    .theme-glow-shadow { box-shadow: 0 0 20px -2px var(--theme-glow); }
+    .theme-glow-border { box-shadow: 0 0 14px -3px var(--theme-glow), inset 0 0 10px -4px var(--theme-glow); }
+
+    /* Cyber grid overlay */
+    .cyber-grid-bg {
+      background-image:
+        linear-gradient(to right, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+      background-size: 36px 36px;
+    }
+
+    /* Glassmorphism */
+    .glass-panel {
+      background: rgba(14, 14, 18, 0.78);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border-medium);
+    }
+
+    .glass-panel-elevated {
+      background: rgba(21, 21, 27, 0.88);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--border-bright);
+    }
+
+    /* Radial glow vignette */
+    .vignette-radial {
+      background: radial-gradient(circle at 50% 0%, var(--theme-surface-glow) 0%, transparent 65%);
+    }
+
+    /* Pop animation */
+    @keyframes cyberPop {
+      0% { opacity: 0; transform: translateY(6px) scale(0.98); }
+      100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .animate-pop {
+      animation: cyberPop 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    /* SVG icon utility */
+    .icon-svg {
+      display: inline-block;
+      width: 1.15em;
+      height: 1.15em;
+      stroke-width: 0;
+      stroke: currentColor;
+      fill: currentColor;
+      vertical-align: middle;
+      flex-shrink: 0;
+    }
   </style>
 </head>
-<body>
-  <div id="toast"></div>
-  <header>
-    <div class="logo"><em>J</em>ARVIS</div>
-    <div class="pill" id="pill"><span class="dot"></span><span id="st">Connecting</span></div>
-    <div class="enc-badge" id="enc">AES-256</div>
-    <div class="spacer"></div>
-    <div class="url">__IP__:__PORT__</div>
-  </header>
-  <main id="feed"></main>
-  <footer>
-    <input id="inp" placeholder="Send a command to MAX…" autocomplete="off">
-    <label class="btn-attach" for="file-inp" title="Send file">+</label>
-    <input type="file" id="file-inp" multiple accept="*/*" style="display:none">
-    <button id="mic-btn" onclick="doMic()" title="Voice command">MIC</button>
-    <button class="btn btn-wake" id="wake" onclick="doWake()">WAKE</button>
-    <button class="btn btn-send" onclick="doSend()">SEND</button>
-  </footer>
 
+<body class="bg-[#070709] text-[#f5f5f7] font-sans antialiased selection:bg-white selection:text-black overflow-x-hidden min-h-screen flex flex-col">
+
+  <!-- Subtly Animated Background Grid & Ambient Glow -->
+  <div class="fixed inset-0 cyber-grid-bg pointer-events-none z-0"></div>
+  <div id="ambient-radial" class="fixed inset-0 vignette-radial pointer-events-none z-0 transition-all duration-700"></div>
+
+  <!-- TOAST NOTIFICATION CONTAINER -->
+  <div id="toast" class="fixed top-20 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-full glass-panel-elevated border text-xs font-mono font-semibold tracking-wider transition-all duration-300 opacity-0 pointer-events-none translate-y-[-10px] flex items-center gap-2 shadow-2xl">
+    <span class="w-2 h-2 rounded-full theme-accent-bg animate-ping"></span>
+    <span id="toast-text">System Initialized</span>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- SIDEBAR NAVIGATION -->
+  <!-- ========================================================================= -->
+  <aside id="sidebar" class="fixed left-0 top-0 h-full w-64 glass-panel z-40 flex flex-col pt-5 pb-6 border-r border-[rgba(255,255,255,0.1)] transition-transform duration-300 ease-in-out -translate-x-full lg:translate-x-0">
+    <!-- Brand / System Title -->
+    <div class="px-6 mb-8 flex items-center gap-3">
+      <div class="relative w-10 h-10 rounded-xl bg-black border border-[rgba(255,255,255,0.2)] flex items-center justify-center shrink-0 shadow-lg overflow-hidden group">
+        <div class="absolute inset-0 theme-accent-soft-bg opacity-40"></div>
+        <!-- Cyber Chip Logo SVG -->
+        <svg class="w-5 h-5 theme-accent-text group-hover:scale-110 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="4" y="4" width="16" height="16" rx="3"></rect>
+          <rect x="9" y="9" width="6" height="6"></rect>
+          <path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 15h3M1 9h3M1 15h3"></path>
+        </svg>
+        <div class="absolute bottom-0 left-0 right-0 h-[2px] theme-accent-bg"></div>
+      </div>
+      <div>
+        <div class="font-display font-bold text-sm tracking-wider text-white flex items-center gap-1.5">
+          <span>MAX OS</span>
+          <span class="text-[10px] font-mono px-1.5 py-0.2 rounded border border-[rgba(255,255,255,0.2)] text-[#a1a1aa]">v4.8</span>
+        </div>
+        <div class="text-[10px] font-mono tracking-widest text-[#71717a] uppercase">CYBERBLACK // AI</div>
+      </div>
+    </div>
+
+    <!-- Main Navigation Items -->
+    <nav class="flex-1 px-3 space-y-1" id="nav-menu">
+      <button onclick="switchTab('command-center')" class="nav-tab-btn active w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-xs font-medium tracking-wide transition-all duration-200 text-white bg-[rgba(255,255,255,0.08)] border border-[rgba(255,255,255,0.18)]" data-tab="command-center">
+        <!-- Terminal / Command Icon -->
+        <svg class="w-4 h-4 theme-accent-text" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="4 17 10 11 4 5"></polyline>
+          <line x1="12" y1="19" x2="20" y2="19"></line>
+        </svg>
+        <span>Command Center</span>
+        <span class="ml-auto w-1.5 h-1.5 rounded-full theme-accent-bg"></span>
+      </button>
+
+      <button onclick="switchTab('neural-nodes')" class="nav-tab-btn w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-xs font-medium tracking-wide transition-all duration-200 text-[#a1a1aa] hover:text-white hover:bg-[rgba(255,255,255,0.04)]" data-tab="neural-nodes">
+        <!-- Hub / Nodes Icon -->
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"></circle>
+          <circle cx="19" cy="5" r="2"></circle>
+          <circle cx="5" cy="5" r="2"></circle>
+          <circle cx="5" cy="19" r="2"></circle>
+          <circle cx="19" cy="19" r="2"></circle>
+          <line x1="12" y1="9" x2="12" y2="3"></line>
+          <line x1="9.5" y1="10.5" x2="6.5" y2="6.5"></line>
+          <line x1="14.5" y1="10.5" x2="17.5" y2="6.5"></line>
+          <line x1="9.5" y1="13.5" x2="6.5" y2="17.5"></line>
+          <line x1="14.5" y1="13.5" x2="17.5" y2="17.5"></line>
+        </svg>
+        <span>Neural Nodes</span>
+        <span class="ml-auto text-[10px] font-mono text-[#71717a] bg-[#16161c] px-1.5 py-0.5 rounded border border-[rgba(255,255,255,0.06)]">12 Live</span>
+      </button>
+
+      <button onclick="switchTab('telemetry-logs')" class="nav-tab-btn w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-xs font-medium tracking-wide transition-all duration-200 text-[#a1a1aa] hover:text-white hover:bg-[rgba(255,255,255,0.04)]" data-tab="telemetry-logs">
+        <!-- Telemetry / Activity Chart Icon -->
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+        </svg>
+        <span>Telemetry Stream</span>
+        <span class="ml-auto text-[10px] font-mono text-[#71717a] bg-[#16161c] px-1.5 py-0.5 rounded border border-[rgba(255,255,255,0.06)]" id="log-counter-pill">24 evt</span>
+      </button>
+
+      <button onclick="switchTab('system-settings')" class="nav-tab-btn w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-xs font-medium tracking-wide transition-all duration-200 text-[#a1a1aa] hover:text-white hover:bg-[rgba(255,255,255,0.04)]" data-tab="system-settings">
+        <!-- Settings Sliders Icon -->
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="4" y1="21" x2="4" y2="14"></line>
+          <line x1="4" y1="10" x2="4" y2="3"></line>
+          <line x1="12" y1="21" x2="12" y2="12"></line>
+          <line x1="12" y1="8" x2="12" y2="3"></line>
+          <line x1="20" y1="21" x2="20" y2="16"></line>
+          <line x1="20" y1="12" x2="20" y2="3"></line>
+          <line x1="1" y1="14" x2="7" y2="14"></line>
+          <line x1="9" y1="8" x2="15" y2="8"></line>
+          <line x1="17" y1="16" x2="23" y2="16"></line>
+        </svg>
+        <span>System & Themes</span>
+        <span class="ml-auto text-[10px] font-mono theme-accent-text" id="active-theme-label">MONO</span>
+      </button>
+    </nav>
+
+    <!-- Mini Telemetry Diagnostics Widget in Sidebar -->
+    <div class="mx-3 p-3 rounded-xl bg-[#0b0b0e] border border-[rgba(255,255,255,0.08)] space-y-2">
+      <div class="flex items-center justify-between text-[10px] font-mono text-[#71717a]">
+        <span>KERNEL LOAD</span>
+        <span class="text-white font-semibold" id="cpu-load-val">18.4%</span>
+      </div>
+      <div class="w-full bg-[#16161c] h-1.5 rounded-full overflow-hidden">
+        <div id="cpu-load-bar" class="h-full theme-accent-bg transition-all duration-500" style="width: 18.4%;"></div>
+      </div>
+      <div class="flex items-center justify-between text-[10px] font-mono text-[#71717a] pt-1">
+        <span>MEM 4.2 / 16 GB</span>
+        <span class="text-white font-semibold">STABLE</span>
+      </div>
+    </div>
+
+    <!-- Sidebar Bottom Status Footer -->
+    <div class="px-6 pt-4 border-t border-[rgba(255,255,255,0.08)] flex items-center justify-between text-[11px] font-mono">
+      <div class="flex items-center gap-2">
+        <div class="w-2 h-2 rounded-full theme-accent-bg animate-pulse"></div>
+        <span class="text-[#a1a1aa]" id="connection-state">STANDALONE</span>
+      </div>
+      <span class="text-[#65656e]">BUILD 2026.4</span>
+    </div>
+  </aside>
+
+  <!-- Backdrop overlay for mobile menu -->
+  <div id="sidebar-backdrop" onclick="toggleSidebar(false)" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-30 lg:hidden hidden"></div>
+
+  <!-- ========================================================================= -->
+  <!-- MAIN CONTENT WRAPPER -->
+  <!-- ========================================================================= -->
+  <div class="lg:pl-64 flex flex-col flex-1 min-h-screen relative z-10">
+
+    <!-- TOP HEADER BAR -->
+    <header class="sticky top-0 h-16 glass-panel z-30 flex items-center justify-between px-4 sm:px-6 border-b border-[rgba(255,255,255,0.1)]">
+      <!-- Left side: Mobile Toggle & Status Indicator -->
+      <div class="flex items-center gap-3">
+        <button onclick="toggleSidebar(true)" class="lg:hidden p-2 rounded-lg bg-[#14141a] border border-[rgba(255,255,255,0.1)] text-[#a1a1aa] hover:text-white" aria-label="Open Sidebar">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+
+        <div class="flex items-center gap-2.5 px-3 py-1.5 rounded-lg bg-[#0e0e12] border border-[rgba(255,255,255,0.12)]">
+          <!-- Shield Icon -->
+          <svg class="w-4 h-4 theme-accent-text" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+          </svg>
+          <span class="font-mono text-xs text-white tracking-wider font-semibold">SECURE_OPS//ACTIVE</span>
+        </div>
+
+        <div class="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#0e0e12] border border-[rgba(255,255,255,0.08)] font-mono text-[11px] text-[#a1a1aa]">
+          <!-- Clock Icon -->
+          <svg class="w-3.5 h-3.5 theme-accent-text" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
+          </svg>
+          <span id="live-clock">00:00:00 UTC</span>
+        </div>
+      </div>
+
+      <!-- Center / Right: Dynamic Quick Theme Switcher & Actions -->
+      <div class="flex items-center gap-2 sm:gap-3">
+
+        <!-- THEME QUICK SELECTOR (Dropdown / Pills) -->
+        <div class="relative">
+          <button id="theme-menu-btn" onclick="toggleThemeDropdown()" class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#0e0e12] hover:bg-[#16161c] border border-[rgba(255,255,255,0.14)] text-xs font-mono transition-all" title="Select Theme Scheme">
+            <span class="w-2.5 h-2.5 rounded-full theme-accent-bg ring-2 ring-white/20"></span>
+            <span class="hidden sm:inline text-white font-medium capitalize" id="current-theme-name-display">Theme: Monochrome</span>
+            <!-- Palette Icon -->
+            <svg class="w-3.5 h-3.5 text-[#71717a]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="13.5" cy="6.5" r=".5" fill="currentColor"></circle>
+              <circle cx="17.5" cy="10.5" r=".5" fill="currentColor"></circle>
+              <circle cx="8.5" cy="7.5" r=".5" fill="currentColor"></circle>
+              <circle cx="6.5" cy="12.5" r=".5" fill="currentColor"></circle>
+              <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.9 0 1.5-.7 1.5-1.5 0-.4-.2-.8-.4-1.1-.3-.4-.5-.9-.5-1.4 0-1.1.9-2 2-2h2.4c3.6 0 6.5-2.9 6.5-6.5C22 5.6 17.5 2 12 2z"></path>
+            </svg>
+          </button>
+
+          <!-- Theme Dropdown Modal Menu -->
+          <div id="theme-dropdown" class="hidden absolute right-0 mt-2 w-64 glass-panel-elevated rounded-xl p-3 shadow-2xl z-50 border border-[rgba(255,255,255,0.18)] space-y-1.5">
+            <div class="text-[10px] font-mono text-[#71717a] uppercase tracking-wider px-2 pb-1 border-b border-[rgba(255,255,255,0.08)]">
+              Primary & Accent Palettes
+            </div>
+
+            <!-- 1. Pure Monochrome (Default Main Theme) -->
+            <button onclick="setTheme('mono')" class="w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-xs font-mono transition-colors hover:bg-white/10 text-white" data-theme-choice="mono">
+              <div class="flex items-center gap-2.5">
+                <span class="w-3.5 h-3.5 rounded-full bg-white border border-black ring-1 ring-white/40"></span>
+                <span class="font-semibold">Cyber Monochrome</span>
+              </div>
+              <span class="text-[9px] px-1.5 py-0.5 rounded bg-white/10 text-white font-mono">MAIN</span>
+            </button>
+
+            <!-- 2. Cyber Cyan -->
+            <button onclick="setTheme('cyan')" class="w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-xs font-mono transition-colors hover:bg-white/10 text-[#a1a1aa] hover:text-white" data-theme-choice="cyan">
+              <div class="flex items-center gap-2.5">
+                <span class="w-3.5 h-3.5 rounded-full bg-[#00f0ff] ring-1 ring-[#00f0ff]/40"></span>
+                <span>Electric Cyan</span>
+              </div>
+              <span class="text-[9px] text-[#00f0ff]">#00f0ff</span>
+            </button>
+
+            <!-- 3. Matrix Emerald -->
+            <button onclick="setTheme('emerald')" class="w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-xs font-mono transition-colors hover:bg-white/10 text-[#a1a1aa] hover:text-white" data-theme-choice="emerald">
+              <div class="flex items-center gap-2.5">
+                <span class="w-3.5 h-3.5 rounded-full bg-[#00ff66] ring-1 ring-[#00ff66]/40"></span>
+                <span>Matrix Emerald</span>
+              </div>
+              <span class="text-[9px] text-[#00ff66]">#00ff66</span>
+            </button>
+
+            <!-- 4. Solar Amber -->
+            <button onclick="setTheme('amber')" class="w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-xs font-mono transition-colors hover:bg-white/10 text-[#a1a1aa] hover:text-white" data-theme-choice="amber">
+              <div class="flex items-center gap-2.5">
+                <span class="w-3.5 h-3.5 rounded-full bg-[#ffb703] ring-1 ring-[#ffb703]/40"></span>
+                <span>Solar Amber</span>
+              </div>
+              <span class="text-[9px] text-[#ffb703]">#ffb703</span>
+            </button>
+
+            <!-- 5. Hyper Violet -->
+            <button onclick="setTheme('violet')" class="w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-xs font-mono transition-colors hover:bg-white/10 text-[#a1a1aa] hover:text-white" data-theme-choice="violet">
+              <div class="flex items-center gap-2.5">
+                <span class="w-3.5 h-3.5 rounded-full bg-[#c084fc] ring-1 ring-[#c084fc]/40"></span>
+                <span>Hyper Violet</span>
+              </div>
+              <span class="text-[9px] text-[#c084fc]">#c084fc</span>
+            </button>
+
+            <!-- 6. Crimson Alert -->
+            <button onclick="setTheme('crimson')" class="w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-xs font-mono transition-colors hover:bg-white/10 text-[#a1a1aa] hover:text-white" data-theme-choice="crimson">
+              <div class="flex items-center gap-2.5">
+                <span class="w-3.5 h-3.5 rounded-full bg-[#ff3366] ring-1 ring-[#ff3366]/40"></span>
+                <span>Crimson Protocol</span>
+              </div>
+              <span class="text-[9px] text-[#ff3366]">#ff3366</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Audio Synthesizer SFX Mute/Unmute -->
+        <button id="sound-btn" onclick="toggleAudioFx()" class="p-2 rounded-lg bg-[#0e0e12] hover:bg-[#16161c] border border-[rgba(255,255,255,0.12)] text-[#a1a1aa] hover:text-white transition-colors" title="Cyber Audio FX Toggle">
+          <!-- Volume Icon -->
+          <svg id="sound-icon-svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+          </svg>
+        </button>
+
+        <!-- Quick Activity Notification Center -->
+        <button onclick="switchTab('telemetry-logs')" class="relative p-2 rounded-lg bg-[#0e0e12] hover:bg-[#16161c] border border-[rgba(255,255,255,0.12)] text-[#a1a1aa] hover:text-white transition-colors" title="View Telemetry">
+          <!-- Bell Icon -->
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+          </svg>
+          <span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full theme-accent-bg"></span>
+        </button>
+
+        <!-- User / Auth Profile -->
+        <div class="hidden sm:flex items-center gap-2 pl-1">
+          <div class="w-8 h-8 rounded-lg bg-black border border-[rgba(255,255,255,0.2)] flex items-center justify-center font-mono text-xs font-bold text-white shadow-inner">
+            <span class="theme-accent-text">MX</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- ======================================================================= -->
+    <!-- VIEW CONTAINER: MULTI-VIEW ARCHITECTURE -->
+    <!-- ======================================================================= -->
+    <main class="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
+
+      <!-- ===================================================================== -->
+      <!-- VIEW 1: COMMAND CENTER (Default Main View) -->
+      <!-- ===================================================================== -->
+      <section id="view-command-center" class="view-panel block space-y-6">
+
+        <!-- TOP HUD HERO & CONCENTRIC RADAR VISUALIZATION BANNER -->
+        <div class="relative glass-panel rounded-2xl p-6 sm:p-8 overflow-hidden border border-[rgba(255,255,255,0.14)] shadow-2xl flex flex-col lg:flex-row items-center justify-between gap-8">
+
+          <!-- Background Ambient Glow & Scanline -->
+          <div class="absolute -right-24 -top-24 w-96 h-96 rounded-full pointer-events-none blur-3xl opacity-20 theme-accent-bg"></div>
+
+          <!-- Left: Mission Status & State Controls -->
+          <div class="flex flex-col gap-4 z-10 max-w-xl text-left w-full">
+            <div class="flex flex-wrap items-center gap-2.5">
+              <span id="hud-state-pill" class="px-2.5 py-0.5 rounded text-[11px] font-mono tracking-widest font-semibold uppercase theme-accent-soft-bg theme-accent-text border border-white/20 flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full theme-accent-bg animate-ping"></span>
+                STATE: <span id="hud-state-name">EXECUTING</span>
+              </span>
+              <span class="text-xs font-mono text-[#71717a]">|</span>
+              <span class="text-xs font-mono text-[#a1a1aa] flex items-center gap-1">
+                <!-- Lock Icon -->
+                <svg class="w-3.5 h-3.5 theme-accent-text" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                </svg>
+                RSA-4096 / SHA-3
+              </span>
+              <span class="text-xs font-mono text-[#71717a]">|</span>
+              <span class="text-xs font-mono text-[#a1a1aa]">STABILITY: 99.4%</span>
+            </div>
+
+            <h1 class="text-2xl sm:text-3xl lg:text-4xl font-display font-bold tracking-tight text-white leading-tight">
+              MAX OS // KERNEL v4.8
+            </h1>
+
+            <p class="text-sm text-[#a1a1aa] leading-relaxed font-sans">
+              Just A Rather Very Intelligent System. Autonomous neural telemetry routing, code synthesis engine, and real-time perimeter defense.
+            </p>
+
+            <!-- State Modifier Buttons -->
+            <div class="flex flex-wrap items-center gap-2 pt-2">
+              <button onclick="setSystemState('EXECUTING')" class="state-btn px-3 py-1.5 rounded-lg text-xs font-mono font-medium transition-all duration-150 flex items-center gap-1.5 bg-white text-black font-semibold shadow-md" data-state="EXECUTING">
+                <!-- Lightning / Bolt Icon -->
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
+                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                </svg>
+                <span>Executing</span>
+              </button>
+
+              <button onclick="setSystemState('THINKING')" class="state-btn px-3 py-1.5 rounded-lg text-xs font-mono font-medium transition-all duration-150 flex items-center gap-1.5 bg-[#14141a] hover:bg-[#1c1c24] text-[#a1a1aa] hover:text-white border border-[rgba(255,255,255,0.1)]" data-state="THINKING">
+                <!-- Brain / Psychology Icon -->
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 4.44-2.04z"></path>
+                  <path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-4.44-2.04z"></path>
+                </svg>
+                <span>Thinking</span>
+              </button>
+
+              <button onclick="setSystemState('DEFENSE')" class="state-btn px-3 py-1.5 rounded-lg text-xs font-mono font-medium transition-all duration-150 flex items-center gap-1.5 bg-[#14141a] hover:bg-[#1c1c24] text-[#a1a1aa] hover:text-white border border-[rgba(255,255,255,0.1)]" data-state="DEFENSE">
+                <!-- Shield Icon -->
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                </svg>
+                <span>Defense</span>
+              </button>
+
+              <button onclick="setSystemState('IDLE')" class="state-btn px-3 py-1.5 rounded-lg text-xs font-mono font-medium transition-all duration-150 flex items-center gap-1.5 bg-[#14141a] hover:bg-[#1c1c24] text-[#a1a1aa] hover:text-white border border-[rgba(255,255,255,0.1)]" data-state="IDLE">
+                <!-- Power Icon -->
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path>
+                  <line x1="12" y1="2" x2="12" y2="12"></line>
+                </svg>
+                <span>Idle</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Right: Precision Canvas Scifi Holographic HUD & Radar -->
+          <div class="relative w-64 h-64 shrink-0 flex items-center justify-center z-10">
+            <!-- Canvas Radar -->
+            <canvas id="radar-canvas" width="256" height="256" class="w-64 h-64 cursor-crosshair rounded-full" title="Interactive Radar (Click to ping)"></canvas>
+
+            <!-- Center Core HUD Unit (Glowing Cyber Reactor) -->
+            <div class="absolute w-14 h-14 rounded-full bg-black/85 border border-white/30 flex items-center justify-center shadow-2xl backdrop-blur-md pointer-events-none">
+              <svg id="radar-core-svg" class="w-6 h-6 theme-accent-text animate-pulse" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="4"></circle>
+                <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path>
+              </svg>
+            </div>
+
+            <!-- Compass / Angle Markers -->
+            <div class="absolute top-1 font-mono text-[9px] text-[#71717a] pointer-events-none">000°</div>
+            <div class="absolute bottom-1 font-mono text-[9px] text-[#71717a] pointer-events-none">180°</div>
+            <div class="absolute left-1 font-mono text-[9px] text-[#71717a] pointer-events-none">270°</div>
+            <div class="absolute right-1 font-mono text-[9px] text-[#71717a] pointer-events-none">090°</div>
+          </div>
+        </div>
+
+        <!-- MAIN DUAL-COLUMN WORKSPACE: CHAT FEED + REAL-TIME TELEMETRY LOGS -->
+        <div class="grid grid-cols-1 xl:grid-cols-12 gap-6">
+
+          <!-- Left Column (8 cols): Chat & Interactive Command Feed -->
+          <div class="xl:col-span-8 flex flex-col gap-4">
+
+            <!-- Active Prompt Quick-Suggestion Chips -->
+            <div class="flex items-center gap-2 overflow-x-auto pb-1 text-xs font-mono no-scrollbar">
+              <span class="text-[#71717a] text-[11px] uppercase tracking-wider shrink-0 flex items-center gap-1">
+                <svg class="w-3.5 h-3.5 theme-accent-text" viewBox="0 0 24 24" fill="currentColor">
+                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                </svg> Quick:
+              </span>
+              <button onclick="sendQuickPrompt('Analyze the attached handbook and verify encryption protocols across active neural nodes.')" class="px-3 py-1 rounded-full bg-[#121218] hover:bg-[#1a1a24] border border-[rgba(255,255,255,0.1)] text-[#a1a1aa] hover:text-white transition-all shrink-0">
+                Verify Encryption
+              </button>
+              <button onclick="sendQuickPrompt('Run diagnostic health check on Node Cluster Delta-4 and Gateway 09.')" class="px-3 py-1 rounded-full bg-[#121218] hover:bg-[#1a1a24] border border-[rgba(255,255,255,0.1)] text-[#a1a1aa] hover:text-white transition-all shrink-0">
+                Diagnostic Cluster
+              </button>
+              <button onclick="sendQuickPrompt('Execute automated backup sequence for node cluster beta.')" class="px-3 py-1 rounded-full bg-[#121218] hover:bg-[#1a1a24] border border-[rgba(255,255,255,0.1)] text-[#a1a1aa] hover:text-white transition-all shrink-0">
+                Backup Beta
+              </button>
+              <button onclick="sendQuickPrompt('Calibrate neural engine weights to FP16 with zero-drift.')" class="px-3 py-1 rounded-full bg-[#121218] hover:bg-[#1a1a24] border border-[rgba(255,255,255,0.1)] text-[#a1a1aa] hover:text-white transition-all shrink-0">
+                Calibrate Weights
+              </button>
+            </div>
+
+            <!-- CHAT FEED CONTAINER -->
+            <div id="chat-feed" class="flex flex-col gap-4 min-h-[440px] max-h-[580px] overflow-y-auto pr-1 p-1">
+
+              <!-- Message 1: User -->
+              <div class="flex flex-col items-end gap-1.5 animate-pop">
+                <div class="flex items-center gap-2 font-mono text-[11px] text-[#71717a]">
+                  <span>USER_01</span>
+                  <span>14:38:12</span>
+                </div>
+                <div class="max-w-2xl bg-[#121218] border border-[rgba(255,255,255,0.14)] rounded-2xl rounded-tr-sm p-4 text-[#f5f5f7] text-sm leading-relaxed shadow-lg">
+                  Analyze the attached handbook and verify encryption protocols across active neural nodes. Report any anomalies in subnet 4.
+                  <div class="mt-3 pt-2.5 flex items-center gap-2 border-t border-[rgba(255,255,255,0.08)]">
+                    <!-- File Icon -->
+                    <svg class="w-4 h-4 theme-accent-text" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                      <polyline points="14 2 14 8 20 8"></polyline>
+                      <line x1="16" y1="13" x2="8" y2="13"></line>
+                      <line x1="16" y1="17" x2="8" y2="17"></line>
+                    </svg>
+                    <span class="font-mono text-xs text-[#a1a1aa]">Index of cybersecurity handbook.md</span>
+                    <span class="ml-auto font-mono text-[10px] theme-accent-text border border-white/20 px-2 py-0.5 rounded">ATTACHED</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Message 2: Assistant -->
+              <div class="flex flex-col items-start gap-1.5 animate-pop">
+                <div class="flex items-center gap-2 font-mono text-[11px] theme-accent-text">
+                  <!-- Robot Icon -->
+                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="11" width="18" height="10" rx="2"></rect>
+                    <circle cx="12" cy="5" r="2"></circle>
+                    <path d="M12 7v4M8 16h0.01M16 16h0.01"></path>
+                  </svg>
+                  <span class="font-bold">MAX_AI</span>
+                  <span class="text-[#71717a]">14:38:15</span>
+                </div>
+                <div class="max-w-2xl bg-[#0e0e12] border border-[rgba(255,255,255,0.12)] rounded-2xl rounded-tl-sm p-4 text-[#f5f5f7] text-sm space-y-3 shadow-lg">
+                  <p class="text-[#f5f5f7] leading-relaxed">
+                    Handbook parsed successfully. Initializing deep scan across 12 active neural nodes. Subnet 4 is currently routing encrypted telemetry through secondary tunnels.
+                  </p>
+
+                  <!-- Tool Execution Terminal Block -->
+                  <div class="bg-black/90 rounded-xl p-3 font-mono text-xs border border-[rgba(255,255,255,0.08)] space-y-1">
+                    <div class="flex items-center justify-between text-[#71717a] border-b border-white/10 pb-1.5 mb-1.5">
+                      <span class="flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                        TOOL EXECUTION: verify_subnet_encryption.sh
+                      </span>
+                      <button onclick="copyCode(this)" class="hover:text-white transition-colors" title="Copy output">
+                        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                        </svg>
+                      </button>
+                    </div>
+                    <div class="text-[#a1a1aa]">&gt; target: node_cluster_delta_4</div>
+                    <div class="text-[#a1a1aa]">&gt; status: <span class="theme-accent-text font-semibold">SECURE [RSA-4096 / SHA-3]</span></div>
+                    <div class="text-[#a1a1aa]">&gt; anomaly_score: <span class="text-white font-semibold">0.002</span> (Nominal)</div>
+                  </div>
+
+                  <p class="text-[#a1a1aa] text-xs">
+                    All security metrics remain within optimal operational thresholds. No intrusions detected.
+                  </p>
+                </div>
+              </div>
+
+              <!-- Message 3: User -->
+              <div class="flex flex-col items-end gap-1.5 animate-pop">
+                <div class="flex items-center gap-2 font-mono text-[11px] text-[#71717a]">
+                  <span>USER_01</span>
+                  <span>14:40:02</span>
+                </div>
+                <div class="max-w-2xl bg-[#121218] border border-[rgba(255,255,255,0.14)] rounded-2xl rounded-tr-sm p-4 text-[#f5f5f7] text-sm leading-relaxed shadow-lg">
+                  Execute automated backup sequence for node cluster beta.
+                </div>
+              </div>
+
+              <!-- Message 4: Assistant (Executing / Progress) -->
+              <div class="flex flex-col items-start gap-1.5 animate-pop" id="active-executing-card">
+                <div class="flex items-center gap-2 font-mono text-[11px] theme-accent-text">
+                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="11" width="18" height="10" rx="2"></rect>
+                    <circle cx="12" cy="5" r="2"></circle>
+                    <path d="M12 7v4M8 16h0.01M16 16h0.01"></path>
+                  </svg>
+                  <span class="font-bold">MAX_AI</span>
+                  <span class="text-[#71717a]">14:40:05</span>
+                </div>
+                <div class="max-w-2xl w-full bg-[#0e0e12] border border-[rgba(255,255,255,0.12)] rounded-2xl rounded-tl-sm p-4 text-[#f5f5f7] text-sm space-y-3 shadow-lg">
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2 text-white font-mono text-xs">
+                      <svg class="w-4 h-4 animate-spin theme-accent-text" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="2" x2="12" y2="6"></line>
+                        <line x1="12" y1="18" x2="12" y2="22"></line>
+                        <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line>
+                        <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line>
+                        <line x1="2" y1="12" x2="6" y2="12"></line>
+                        <line x1="18" y1="12" x2="22" y2="12"></line>
+                      </svg>
+                      <span>Executing automated backup sequence...</span>
+                    </div>
+                    <span class="font-mono text-xs text-[#a1a1aa]">75%</span>
+                  </div>
+                  <div class="w-full bg-[#181820] h-2 rounded-full overflow-hidden border border-white/5">
+                    <div class="theme-accent-bg h-full w-3/4 animate-pulse rounded-full"></div>
+                  </div>
+                  <div class="text-[11px] font-mono text-[#71717a] flex items-center justify-between">
+                    <span>Target: S3://backup-vault-beta</span>
+                    <span>Snapshot: #BK-9042</span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- CONVERSATION COMPOSER / INPUT BOX -->
+            <div class="glass-panel-elevated rounded-2xl p-3 sm:p-4 shadow-2xl flex flex-col gap-3 border border-[rgba(255,255,255,0.16)]">
+
+              <!-- Attached File Chips & Audio Waveform Preview -->
+              <div class="flex items-center justify-between gap-2 overflow-x-auto">
+                <div id="attachment-chip" class="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-[#14141c] border border-[rgba(255,255,255,0.12)] text-[#f5f5f7] font-mono text-xs">
+                  <svg class="w-3.5 h-3.5 theme-accent-text" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                  </svg>
+                  <span class="truncate max-w-[200px]">cybersecurity_handbook.md</span>
+                  <button onclick="document.getElementById('attachment-chip').remove()" class="text-[#71717a] hover:text-white transition-colors" title="Remove file">
+                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <line x1="18" y1="6" x2="6" y2="18"></line>
+                      <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                  </button>
+                </div>
+
+                <!-- Real-time Voice Audio Visualizer Canvas -->
+                <div id="voice-viz-container" class="hidden flex items-center gap-2 px-3 py-1 rounded-lg bg-[#14141c] border border-[rgba(255,255,255,0.15)] font-mono text-xs">
+                  <span class="w-2 h-2 rounded-full bg-red-500 animate-ping"></span>
+                  <span class="text-xs text-white">LISTENING...</span>
+                  <canvas id="voice-waveform" width="90" height="20" class="w-[90px] h-[20px]"></canvas>
+                </div>
+
+                <span class="font-mono text-[10px] text-[#71717a] ml-auto shrink-0 uppercase tracking-widest hidden sm:inline">
+                  READY TO STREAM
+                </span>
+              </div>
+
+              <!-- Textarea + Controls -->
+              <div class="relative flex items-end gap-2">
+                <textarea id="command-input" rows="2" placeholder="Send a command or query to MAX OS..." class="w-full bg-[#0a0a0d] border border-[rgba(255,255,255,0.14)] focus:border-white/50 rounded-xl p-3 text-sm text-white placeholder-[#65656e] font-sans resize-none outline-none transition-all focus:ring-1 focus:ring-white/30" onkeydown="handleInputKeydown(event)"></textarea>
+
+                <div class="flex items-center gap-1.5 pb-1 shrink-0">
+                  <!-- File Attachment Button -->
+                  <label for="file-upload" class="p-2.5 rounded-xl bg-[#14141c] hover:bg-[#1c1c28] border border-[rgba(255,255,255,0.12)] text-[#a1a1aa] hover:text-white cursor-pointer transition-colors" title="Attach Document / File">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+                    </svg>
+                    <input type="file" id="file-upload" class="hidden" onchange="handleFileUpload(event)"/>
+                  </label>
+
+                  <!-- Mic Button -->
+                  <button id="mic-btn" onclick="toggleMic()" class="p-2.5 rounded-xl bg-[#14141c] hover:bg-[#1c1c28] border border-[rgba(255,255,255,0.12)] text-[#a1a1aa] hover:text-white transition-all" title="Toggle Voice Recognition">
+                    <svg id="mic-icon-svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                      <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                      <line x1="12" y1="19" x2="12" y2="23"></line>
+                      <line x1="8" y1="23" x2="16" y2="23"></line>
+                    </svg>
+                  </button>
+
+                  <!-- Send Action Button -->
+                  <button onclick="submitUserCommand()" class="px-4 py-2.5 rounded-xl bg-white text-black hover:bg-neutral-200 font-mono text-xs font-bold transition-all shadow-lg flex items-center gap-1.5 active:scale-95">
+                    <span>SEND</span>
+                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <line x1="22" y1="2" x2="11" y2="13"></line>
+                      <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <div class="flex items-center justify-between px-1 text-[10px] font-mono text-[#71717a]">
+                <span>ENTER to send &nbsp;|&nbsp; SHIFT + ENTER for newline</span>
+                <span class="hidden sm:inline">AES-256 ENCRYPTED SESSION</span>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Right Column (4 cols): Live Activity Stream & Telemetry Events -->
+          <div class="xl:col-span-4 flex flex-col gap-4">
+
+            <div class="glass-panel rounded-2xl p-5 border border-[rgba(255,255,255,0.14)] shadow-xl flex flex-col gap-4">
+
+              <!-- Header -->
+              <div class="flex items-center justify-between pb-3 border-b border-[rgba(255,255,255,0.08)]">
+                <div class="flex items-center gap-2">
+                  <svg class="w-4 h-4 theme-accent-text" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                  </svg>
+                  <div class="font-display font-bold text-sm tracking-wide text-white">TELEMETRY FEED</div>
+                </div>
+                <div class="flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full theme-accent-bg animate-pulse"></span>
+                  <span class="font-mono text-[10px] text-white font-semibold">LIVE</span>
+                </div>
+              </div>
+
+              <!-- Filter Tabs -->
+              <div class="grid grid-cols-5 gap-1 font-mono text-[10px]" id="log-filters">
+                <button onclick="filterLogs('ALL')" class="log-filter-btn py-1.5 rounded-lg bg-white text-black font-bold transition-all" data-type="ALL">ALL</button>
+                <button onclick="filterLogs('SYS')" class="log-filter-btn py-1.5 rounded-lg bg-[#14141c] text-[#a1a1aa] hover:text-white transition-all" data-type="SYS">SYS</button>
+                <button onclick="filterLogs('TOOL')" class="log-filter-btn py-1.5 rounded-lg bg-[#14141c] text-[#a1a1aa] hover:text-white transition-all" data-type="TOOL">TOOL</button>
+                <button onclick="filterLogs('WARN')" class="log-filter-btn py-1.5 rounded-lg bg-[#14141c] text-[#a1a1aa] hover:text-white transition-all" data-type="WARN">WARN</button>
+                <button onclick="filterLogs('OK')" class="log-filter-btn py-1.5 rounded-lg bg-[#14141c] text-[#a1a1aa] hover:text-white transition-all" data-type="OK">OK</button>
+              </div>
+
+              <!-- Log Events List -->
+              <div class="flex flex-col gap-2.5 max-h-[500px] overflow-y-auto pr-1" id="log-list">
+
+                <!-- Log 1: Success -->
+                <div class="log-item bg-[#101016] border border-[rgba(255,255,255,0.08)] hover:border-white/20 rounded-xl p-3 flex flex-col gap-1 cursor-pointer transition-all" data-category="OK" onclick="toggleLogDetail(this)">
+                  <div class="flex items-center justify-between font-mono text-[10px]">
+                    <span class="theme-accent-text font-bold">[SUCCESS]</span>
+                    <span class="text-[#71717a]">14:41:02</span>
+                  </div>
+                  <div class="text-xs text-white font-medium">Node Cluster Delta Sync Completed</div>
+                  <div class="hidden font-mono text-[10px] text-[#a1a1aa] pt-2 mt-1 border-t border-white/10 space-y-0.5">
+                    <div>checksum: 0x98f2b189a0c</div>
+                    <div>duration: 142ms</div>
+                    <div>nodes_updated: 12</div>
+                  </div>
+                </div>
+
+                <!-- Log 2: Tool -->
+                <div class="log-item bg-[#101016] border border-[rgba(255,255,255,0.08)] hover:border-white/20 rounded-xl p-3 flex flex-col gap-1 cursor-pointer transition-all" data-category="TOOL" onclick="toggleLogDetail(this)">
+                  <div class="flex items-center justify-between font-mono text-[10px]">
+                    <span class="text-white font-bold">[TOOL]</span>
+                    <span class="text-[#71717a]">14:39:55</span>
+                  </div>
+                  <div class="text-xs text-white font-medium">verify_subnet_encryption.sh executed</div>
+                  <div class="hidden font-mono text-[10px] text-[#a1a1aa] pt-2 mt-1 border-t border-white/10 space-y-0.5">
+                    <div>exit_code: 0</div>
+                    <div>bandwidth: 4.2 MB/s</div>
+                  </div>
+                </div>
+
+                <!-- Log 3: Warning -->
+                <div class="log-item bg-[#101016] border border-[rgba(255,255,255,0.08)] hover:border-white/20 rounded-xl p-3 flex flex-col gap-1 cursor-pointer transition-all" data-category="WARN" onclick="toggleLogDetail(this)">
+                  <div class="flex items-center justify-between font-mono text-[10px]">
+                    <span class="text-amber-400 font-bold">[WARNING]</span>
+                    <span class="text-[#71717a]">14:35:10</span>
+                  </div>
+                  <div class="text-xs text-white font-medium">High latency detected on gateway 09</div>
+                  <div class="hidden font-mono text-[10px] text-[#a1a1aa] pt-2 mt-1 border-t border-white/10 space-y-0.5">
+                    <div>latency: 320ms</div>
+                    <div>action: auto_rerouted_through_node_03</div>
+                  </div>
+                </div>
+
+                <!-- Log 4: System -->
+                <div class="log-item bg-[#101016] border border-[rgba(255,255,255,0.08)] hover:border-white/20 rounded-xl p-3 flex flex-col gap-1 cursor-pointer transition-all" data-category="SYS" onclick="toggleLogDetail(this)">
+                  <div class="flex items-center justify-between font-mono text-[10px]">
+                    <span class="text-[#71717a] font-bold">[SYSTEM]</span>
+                    <span class="text-[#71717a]">14:30:00</span>
+                  </div>
+                  <div class="text-xs text-white font-medium">Neural engine weights calibrated</div>
+                  <div class="hidden font-mono text-[10px] text-[#a1a1aa] pt-2 mt-1 border-t border-white/10 space-y-0.5">
+                    <div>model: MAX-v4.8-core</div>
+                    <div>precision: FP16</div>
+                  </div>
+                </div>
+
+              </div>
+
+              <!-- Log Actions -->
+              <div class="pt-2 border-t border-[rgba(255,255,255,0.08)] flex items-center justify-between text-xs font-mono">
+                <button onclick="clearLogs()" class="text-[#71717a] hover:text-white transition-colors flex items-center gap-1">
+                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                  </svg> Clear
+                </button>
+                <button onclick="exportLogs()" class="theme-accent-text hover:underline transition-colors flex items-center gap-1">
+                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                  </svg> Export JSON
+                </button>
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+      <!-- ===================================================================== -->
+      <!-- VIEW 2: NEURAL NODES MATRIX (Tab 2) -->
+      <!-- ===================================================================== -->
+      <section id="view-neural-nodes" class="view-panel hidden space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-[rgba(255,255,255,0.1)]">
+          <div>
+            <h2 class="text-2xl font-display font-bold text-white">Neural Node Cluster Infrastructure</h2>
+            <p class="text-xs font-mono text-[#a1a1aa]">12 Active Distributed Compute Nodes // Topology: Decentralized Mesh</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="pingAllNodes()" class="px-3.5 py-2 rounded-xl bg-white text-black font-mono text-xs font-bold hover:bg-neutral-200 transition-all flex items-center gap-1.5">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="2"></circle>
+                <path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"></path>
+              </svg> Ping All Nodes
+            </button>
+          </div>
+        </div>
+
+        <!-- Node Grid (12 Cards) -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4" id="nodes-grid">
+          <!-- Dynamically generated via JS -->
+        </div>
+      </section>
+
+      <!-- ===================================================================== -->
+      <!-- VIEW 3: TELEMETRY STREAM CONSOLE (Tab 3) -->
+      <!-- ===================================================================== -->
+      <section id="view-telemetry-logs" class="view-panel hidden space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-[rgba(255,255,255,0.1)]">
+          <div>
+            <h2 class="text-2xl font-display font-bold text-white">Live Telemetry Terminal Console</h2>
+            <p class="text-xs font-mono text-[#a1a1aa]">Real-time system event buffer // Auto-scrolling stream</p>
+          </div>
+          <div class="flex items-center gap-3">
+            <input type="text" id="terminal-filter" placeholder="Filter console logs..." oninput="searchTerminalLogs(this.value)" class="bg-[#101016] border border-[rgba(255,255,255,0.14)] rounded-xl px-3 py-1.5 text-xs font-mono text-white placeholder-[#71717a] outline-none focus:border-white/40"/>
+            <button onclick="toggleStreamPause()" id="stream-pause-btn" class="px-3 py-1.5 rounded-xl bg-[#14141c] hover:bg-[#1e1e28] border border-[rgba(255,255,255,0.14)] text-xs font-mono text-white">Pause</button>
+          </div>
+        </div>
+
+        <div class="glass-panel rounded-2xl p-4 font-mono text-xs border border-[rgba(255,255,255,0.14)] shadow-2xl overflow-hidden">
+          <div class="bg-black/95 rounded-xl p-4 h-[550px] overflow-y-auto space-y-2 text-[#d4d4d8]" id="terminal-console">
+            <!-- Populated dynamically via JS -->
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================================================================== -->
+      <!-- VIEW 4: SYSTEM SETTINGS & THEME CUSTOMIZER (Tab 4) -->
+      <!-- ===================================================================== -->
+      <section id="view-system-settings" class="view-panel hidden space-y-8">
+        <div class="pb-2 border-b border-[rgba(255,255,255,0.1)]">
+          <h2 class="text-2xl font-display font-bold text-white">System Settings & Aesthetics Customizer</h2>
+          <p class="text-xs font-mono text-[#a1a1aa]">Configure UI themes, cyber audio effects, encryption, and neural inference</p>
+        </div>
+
+        <!-- THEME SELECTION GALLERY -->
+        <div class="space-y-4">
+          <div class="flex items-center gap-2">
+            <svg class="w-4 h-4 theme-accent-text" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.9 0 1.5-.7 1.5-1.5 0-.4-.2-.8-.4-1.1-.3-.4-.5-.9-.5-1.4 0-1.1.9-2 2-2h2.4c3.6 0 6.5-2.9 6.5-6.5C22 5.6 17.5 2 12 2z"></path>
+            </svg>
+            <h3 class="text-base font-display font-semibold text-white">Theme Palette Schemes</h3>
+          </div>
+          <p class="text-xs text-[#a1a1aa]">
+            Default primary theme is pure Cyber Black & White. Switch seamlessly between stark monochrome and high-voltage cyber presets.
+          </p>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+
+            <!-- Card 1: Mono (Main) -->
+            <div onclick="setTheme('mono')" class="theme-card cursor-pointer glass-panel rounded-2xl p-5 border transition-all duration-200 hover:border-white/50 relative group" data-theme-card="mono">
+              <div class="flex items-center justify-between mb-3">
+                <span class="font-display font-bold text-sm text-white">Cyber Monochrome</span>
+                <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-white text-black font-bold">DEFAULT MAIN</span>
+              </div>
+              <div class="h-16 rounded-xl bg-black border border-white/20 p-2.5 flex items-center justify-between mb-3">
+                <div class="w-8 h-8 rounded-lg bg-white"></div>
+                <div class="h-2 w-24 bg-white/30 rounded"></div>
+                <div class="w-4 h-4 rounded-full border-2 border-white"></div>
+              </div>
+              <p class="text-xs text-[#a1a1aa]">Pure titanium white highlights on deep obsidian black. High-contrast minimalist cyber elegance.</p>
+            </div>
+
+            <!-- Card 2: Electric Cyan -->
+            <div onclick="setTheme('cyan')" class="theme-card cursor-pointer glass-panel rounded-2xl p-5 border border-white/10 transition-all duration-200 hover:border-[#00f0ff]/50 relative group" data-theme-card="cyan">
+              <div class="flex items-center justify-between mb-3">
+                <span class="font-display font-bold text-sm text-white">Electric Cyan</span>
+                <span class="w-3 h-3 rounded-full bg-[#00f0ff] shadow-[0_0_10px_#00f0ff]"></span>
+              </div>
+              <div class="h-16 rounded-xl bg-[#001014] border border-[#00f0ff]/30 p-2.5 flex items-center justify-between mb-3">
+                <div class="w-8 h-8 rounded-lg bg-[#00f0ff]"></div>
+                <div class="h-2 w-24 bg-[#00f0ff]/30 rounded"></div>
+                <div class="w-4 h-4 rounded-full border-2 border-[#00f0ff]"></div>
+              </div>
+              <p class="text-xs text-[#a1a1aa]">Luminous neo-tokyo cyan glow with deep navy obsidian surfaces.</p>
+            </div>
+
+            <!-- Card 3: Matrix Emerald -->
+            <div onclick="setTheme('emerald')" class="theme-card cursor-pointer glass-panel rounded-2xl p-5 border border-white/10 transition-all duration-200 hover:border-[#00ff66]/50 relative group" data-theme-card="emerald">
+              <div class="flex items-center justify-between mb-3">
+                <span class="font-display font-bold text-sm text-white">Matrix Emerald</span>
+                <span class="w-3 h-3 rounded-full bg-[#00ff66] shadow-[0_0_10px_#00ff66]"></span>
+              </div>
+              <div class="h-16 rounded-xl bg-[#001408] border border-[#00ff66]/30 p-2.5 flex items-center justify-between mb-3">
+                <div class="w-8 h-8 rounded-lg bg-[#00ff66]"></div>
+                <div class="h-2 w-24 bg-[#00ff66]/30 rounded"></div>
+                <div class="w-4 h-4 rounded-full border-2 border-[#00ff66]"></div>
+              </div>
+              <p class="text-xs text-[#a1a1aa]">Acid phosphor green terminal vibe with mainframe console aesthetics.</p>
+            </div>
+
+            <!-- Card 4: Solar Amber -->
+            <div onclick="setTheme('amber')" class="theme-card cursor-pointer glass-panel rounded-2xl p-5 border border-white/10 transition-all duration-200 hover:border-[#ffb703]/50 relative group" data-theme-card="amber">
+              <div class="flex items-center justify-between mb-3">
+                <span class="font-display font-bold text-sm text-white">Solar Amber</span>
+                <span class="w-3 h-3 rounded-full bg-[#ffb703] shadow-[0_0_10px_#ffb703]"></span>
+              </div>
+              <div class="h-16 rounded-xl bg-[#140e00] border border-[#ffb703]/30 p-2.5 flex items-center justify-between mb-3">
+                <div class="w-8 h-8 rounded-lg bg-[#ffb703]"></div>
+                <div class="h-2 w-24 bg-[#ffb703]/30 rounded"></div>
+                <div class="w-4 h-4 rounded-full border-2 border-[#ffb703]"></div>
+              </div>
+              <p class="text-xs text-[#a1a1aa]">Warm cyber gold & amber flare. Vintage sci-fi monitor radiation glow.</p>
+            </div>
+
+            <!-- Card 5: Hyper Violet -->
+            <div onclick="setTheme('violet')" class="theme-card cursor-pointer glass-panel rounded-2xl p-5 border border-white/10 transition-all duration-200 hover:border-[#c084fc]/50 relative group" data-theme-card="violet">
+              <div class="flex items-center justify-between mb-3">
+                <span class="font-display font-bold text-sm text-white">Hyper Violet</span>
+                <span class="w-3 h-3 rounded-full bg-[#c084fc] shadow-[0_0_10px_#c084fc]"></span>
+              </div>
+              <div class="h-16 rounded-xl bg-[#12001a] border border-[#c084fc]/30 p-2.5 flex items-center justify-between mb-3">
+                <div class="w-8 h-8 rounded-lg bg-[#c084fc]"></div>
+                <div class="h-2 w-24 bg-[#c084fc]/30 rounded"></div>
+                <div class="w-4 h-4 rounded-full border-2 border-[#c084fc]"></div>
+              </div>
+              <p class="text-xs text-[#a1a1aa]">Synthwave neon violet & void purple. Futuristic synthetic frequencies.</p>
+            </div>
+
+            <!-- Card 6: Crimson Protocol -->
+            <div onclick="setTheme('crimson')" class="theme-card cursor-pointer glass-panel rounded-2xl p-5 border border-white/10 transition-all duration-200 hover:border-[#ff3366]/50 relative group" data-theme-card="crimson">
+              <div class="flex items-center justify-between mb-3">
+                <span class="font-display font-bold text-sm text-white">Crimson Protocol</span>
+                <span class="w-3 h-3 rounded-full bg-[#ff3366] shadow-[0_0_10px_#ff3366]"></span>
+              </div>
+              <div class="h-16 rounded-xl bg-[#1c0008] border border-[#ff3366]/30 p-2.5 flex items-center justify-between mb-3">
+                <div class="w-8 h-8 rounded-lg bg-[#ff3366]"></div>
+                <div class="h-2 w-24 bg-[#ff3366]/30 rounded"></div>
+                <div class="w-4 h-4 rounded-full border-2 border-[#ff3366]"></div>
+              </div>
+              <p class="text-xs text-[#a1a1aa]">High-alert Akira strike red. Tactical combat warning state.</p>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- AUDIO & ENGINE CONTROLS -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
+
+          <div class="glass-panel rounded-2xl p-5 border border-[rgba(255,255,255,0.12)] space-y-4">
+            <h4 class="font-display font-semibold text-sm text-white flex items-center gap-2">
+              <svg class="w-4 h-4 theme-accent-text" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+              </svg>
+              Cyber Audio Synthesizer
+            </h4>
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-mono text-[#a1a1aa]">Sound Effects (Web Audio API)</span>
+              <button onclick="toggleAudioFx()" id="settings-audio-toggle" class="px-3 py-1 rounded-lg bg-white text-black font-mono text-xs font-bold">ENABLED</button>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-mono text-[#a1a1aa]">Radar Audio Ping</span>
+              <span class="text-xs font-mono text-white">CHIRP 880Hz</span>
+            </div>
+          </div>
+
+          <div class="glass-panel rounded-2xl p-5 border border-[rgba(255,255,255,0.12)] space-y-4">
+            <h4 class="font-display font-semibold text-sm text-white flex items-center gap-2">
+              <svg class="w-4 h-4 theme-accent-text" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+              </svg>
+              Cryptographic Protocols
+            </h4>
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-mono text-[#a1a1aa]">Payload Cipher</span>
+              <span class="text-xs font-mono text-emerald-400 font-bold">AES-256-CBC</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-mono text-[#a1a1aa]">Key Derivation</span>
+              <span class="text-xs font-mono text-white">SHA256 (PBKDF2)</span>
+            </div>
+          </div>
+
+        </div>
+
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- JAVASCRIPT: LOGIC, RADAR CANVAS, AUDIO SYNTH, CHAT STREAMING, THEMES -->
+  <!-- ========================================================================= -->
   <script>
-    // ── Auth — bearer token ───────────────────────────────────────────────────
-    const _authToken  = sessionStorage.getItem('max_token');
-    const _sessionKey = sessionStorage.getItem('max_key');
-
-    if (!_authToken) {
-      location.replace('/login');
-    }
-
-    function _authHeader() { return { 'Authorization': `Bearer ${_authToken}` }; }
-    function _authFetch(url, opts = {}) {
-      opts.headers = Object.assign({}, opts.headers, _authHeader());
-      return fetch(url, opts);
-    }
-
-    // ── AES-256-CBC encryption (CryptoJS) ────────────────────────────────────
-    const _AES_SALT = 'MAX-DASHBOARD-v1';
-    let _aesKey = null;
-
-    function _initCrypto(key) {
-      if (typeof CryptoJS === 'undefined') return false;
-      _aesKey = CryptoJS.SHA256(key + _AES_SALT);
-      return true;
-    }
-
-    function _encrypt(plaintext) {
-      if (!_aesKey || typeof CryptoJS === 'undefined') return null;
-      try {
-        const iv  = CryptoJS.lib.WordArray.random(16);
-        const enc = CryptoJS.AES.encrypt(
-          CryptoJS.enc.Utf8.parse(plaintext), _aesKey,
-          { iv, mode: CryptoJS.mode.CBC, padding: CryptoJS.pad.Pkcs7 }
-        );
-        const ivHex = iv.toString(CryptoJS.enc.Hex);
-        const ctHex = enc.ciphertext.toString(CryptoJS.enc.Hex);
-        const hex   = ivHex + ctHex;
-        const bytes = new Uint8Array(hex.length / 2);
-        for (let i = 0; i < bytes.length; i++)
-          bytes[i] = parseInt(hex.substr(i * 2, 2), 16);
-        return btoa(String.fromCharCode(...bytes));
-      } catch { return null; }
-    }
-
-    const _encReady = _sessionKey ? _initCrypto(_sessionKey) : false;
-    const encBadge  = document.getElementById('enc');
-    if (_encReady) { encBadge.className = 'enc-badge on'; }
-    else           { encBadge.className = 'enc-badge off'; encBadge.textContent = 'NO ENC'; }
-
-    // ── WebSocket ─────────────────────────────────────────────────────────────
-    const feed  = document.getElementById('feed');
-    const pill  = document.getElementById('pill');
-    const stTxt = document.getElementById('st');
-    const wake  = document.getElementById('wake');
-
-    const _wsProto = location.protocol === 'https:' ? 'wss' : 'ws';
-    const _wsUrl   = `${_wsProto}://${location.host}/ws?token=${encodeURIComponent(_authToken)}`;
-    const ws       = new WebSocket(_wsUrl);
-
-    ws.onopen    = () => { sys('Remote session active.'); toast('Connected to MAX'); };
-    ws.onclose   = () => sys('Connection lost — refresh to reconnect.');
-    ws.onerror   = () => sys('Connection error.');
-    ws.onmessage = (e) => {
-      const m = JSON.parse(e.data);
-      if (m.type === 'log')           append(m.speaker, m.text);
-      if (m.type === 'status')        setStatus(m.state);
-      if (m.type === 'wake')          sys('Wake word detected — connecting…');
-      if (m.type === 'sys')           sys(m.text);
-      if (m.type === 'file_received') _onFileReceived(m);
+    // ───────────────────────────────────────────────────────────────────────────
+    // 1. THEME ENGINE: MONO + 5 ACCENT COLORS
+    // ───────────────────────────────────────────────────────────────────────────
+    const THEMES = {
+      mono:    { name: "Cyber Monochrome", accent: "#ffffff", hex: "#ffffff" },
+      cyan:    { name: "Electric Cyan",    accent: "#00f0ff", hex: "#00f0ff" },
+      emerald: { name: "Matrix Emerald",   accent: "#00ff66", hex: "#00ff66" },
+      amber:   { name: "Solar Amber",      accent: "#ffb703", hex: "#ffb703" },
+      violet:  { name: "Hyper Violet",     accent: "#c084fc", hex: "#c084fc" },
+      crimson: { name: "Crimson Protocol", accent: "#ff3366", hex: "#ff3366" },
     };
 
-    function setStatus(s) {
-      if (s === 'active') {
-        pill.className = 'pill on'; stTxt.textContent = 'Active'; wake.classList.remove('show');
-      } else {
-        pill.className = 'pill'; stTxt.textContent = 'Sleeping'; wake.classList.add('show');
-      }
-    }
+    let currentTheme = localStorage.getItem('max_cyber_theme') || 'mono';
 
-    function append(speaker, text) {
-      const d = document.createElement('div');
-      if (speaker === 'MAX') {
-        d.className = 'msg msg-j';
-        d.innerHTML = `<div class="lbl">MAX</div>${esc(text)}`;
-      } else {
-        d.className = 'msg msg-u';
-        d.innerHTML = `<div class="lbl">You</div>${esc(text)}`;
-      }
-      feed.appendChild(d);
-      feed.scrollTop = feed.scrollHeight;
-    }
+    function setTheme(themeKey) {
+      if (!THEMES[themeKey]) themeKey = 'mono';
+      currentTheme = themeKey;
+      localStorage.setItem('max_cyber_theme', themeKey);
+      document.documentElement.setAttribute('data-theme', themeKey);
 
-    function sys(text) {
-      const d = document.createElement('div');
-      d.className = 'msg msg-sys'; d.textContent = text;
-      feed.appendChild(d); feed.scrollTop = feed.scrollHeight;
-    }
+      // Update Header Text
+      const nameDisp = document.getElementById('current-theme-name-display');
+      if (nameDisp) nameDisp.textContent = `Theme: ${THEMES[themeKey].name}`;
 
-    function esc(s) {
-      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-    }
+      const activeLabel = document.getElementById('active-theme-label');
+      if (activeLabel) activeLabel.textContent = themeKey.toUpperCase();
 
-    // ── File helpers ──────────────────────────────────────────────────────────
-    function _fileIcon(name) {
-      const ext = (name.split('.').pop() || '').toLowerCase();
-      if (['jpg','jpeg','png','gif','webp','heic','heif','avif','bmp','svg'].includes(ext)) return '▧';
-      if (['mp4','mov','avi','mkv','webm','m4v','3gp'].includes(ext))                       return '▷';
-      if (['mp3','m4a','wav','flac','aac','ogg','opus'].includes(ext))                      return '♫';
-      if (['pdf'].includes(ext))                                                             return '▤';
-      if (['doc','docx','txt','md','rtf','odt'].includes(ext))                              return '≡';
-      if (['xls','xlsx','csv','ods'].includes(ext))                                         return '▦';
-      if (['ppt','pptx','odp'].includes(ext))                                               return '▱';
-      if (['zip','rar','7z','tar','gz','bz2','xz'].includes(ext))                          return '▣';
-      if (['apk','exe','dmg','deb','rpm','msi'].includes(ext))                              return '□';
-      return '↗';
-    }
-
-    function _fmtSize(bytes) {
-      if (bytes < 1024)             return bytes + ' B';
-      if (bytes < 1024 * 1024)     return (bytes / 1024).toFixed(1) + ' KB';
-      if (bytes < 1024 ** 3)       return (bytes / 1024 / 1024).toFixed(1) + ' MB';
-      return (bytes / 1024 ** 3).toFixed(2) + ' GB';
-    }
-
-    // ── File upload (phone → computer) ────────────────────────────────────────
-    function _uploadFile(file) {
-      const id = 'fc_' + Date.now() + '_' + Math.random().toString(36).slice(2);
-
-      // Create file card in feed
-      const card = document.createElement('div');
-      card.className = 'msg-file';
-      card.id = id;
-      card.innerHTML = `
-        <div class="fc-icon">${_fileIcon(file.name)}</div>
-        <div class="fc-meta">
-          <div class="fc-lbl">Sending</div>
-          <div class="fc-name">${esc(file.name)}</div>
-          <div class="fc-size">${_fmtSize(file.size)}</div>
-          <div class="fc-bar-wrap"><div class="fc-bar" id="${id}_bar"></div></div>
-        </div>
-        <div class="fc-status" id="${id}_st">0%</div>
-      `;
-      feed.appendChild(card);
-      feed.scrollTop = feed.scrollHeight;
-
-      const xhr = new XMLHttpRequest();
-      xhr.open('POST', '/api/upload');
-      xhr.setRequestHeader('Authorization', `Bearer ${_authToken}`);
-
-      xhr.upload.onprogress = (e) => {
-        if (!e.lengthComputable) return;
-        const pct = Math.round(e.loaded / e.total * 100);
-        const bar = document.getElementById(`${id}_bar`);
-        const st  = document.getElementById(`${id}_st`);
-        if (bar) bar.style.width = pct + '%';
-        if (st)  st.textContent  = pct + '%';
-      };
-
-      xhr.onload = () => {
-        const bar  = document.getElementById(`${id}_bar`);
-        const st   = document.getElementById(`${id}_st`);
-        const meta = card.querySelector('.fc-meta');
-        const lbl  = card.querySelector('.fc-lbl');
-        if (xhr.status === 200) {
-          let savedName = file.name;
-          try { savedName = JSON.parse(xhr.responseText).name || file.name; } catch {}
-          const dlUrl = `/uploads/${encodeURIComponent(savedName)}?token=${encodeURIComponent(_authToken)}`;
-          if (bar)  { bar.style.width = '100%'; bar.style.background = 'var(--green)'; }
-          if (st)   { st.textContent = '✓'; st.className = 'fc-status done'; }
-          if (lbl)  lbl.textContent = 'Sent';
-          if (meta) meta.insertAdjacentHTML('beforeend',
-            `<a class="fc-dl" href="${dlUrl}" download="${esc(savedName)}">⬇ Download back</a>`);
-          toast('File sent!');
+      // Update Theme Cards in Settings
+      document.querySelectorAll('.theme-card').forEach(card => {
+        const k = card.getAttribute('data-theme-card');
+        if (k === themeKey) {
+          card.classList.add('border-white', 'theme-glow-shadow');
         } else {
-          let errMsg = 'Upload failed';
-          try { errMsg = JSON.parse(xhr.responseText).error || errMsg; } catch {}
-          if (bar) bar.style.background = '#a0a0a0';
-          if (st)  { st.textContent = 'ERR'; st.className = 'fc-status err'; }
-          if (lbl) lbl.textContent = errMsg;
+          card.classList.remove('border-white', 'theme-glow-shadow');
         }
-      };
+      });
 
-      xhr.onerror = () => {
-        const st  = document.getElementById(`${id}_st`);
-        const lbl = card.querySelector('.fc-lbl');
-        if (st)  { st.textContent = 'ERR'; st.className = 'fc-status err'; }
-        if (lbl) lbl.textContent = 'Connection error';
-      };
+      // Close dropdown
+      const dd = document.getElementById('theme-dropdown');
+      if (dd) dd.classList.add('hidden');
 
-      const fd = new FormData();
-      fd.append('file', file);
-      xhr.send(fd);
+      // Audio feedback
+      playCyberSound('theme');
+      showToast(`Theme activated: ${THEMES[themeKey].name}`);
     }
 
-    // File received by another WebSocket client (e.g., second open tab)
-    function _onFileReceived(m) {
-      const dlUrl = `/uploads/${encodeURIComponent(m.name)}?token=${encodeURIComponent(_authToken)}`;
-      const card  = document.createElement('div');
-      card.className = 'msg-file';
-      card.innerHTML = `
-        <div class="fc-icon">${_fileIcon(m.name)}</div>
-        <div class="fc-meta">
-          <div class="fc-lbl">Received</div>
-          <div class="fc-name">${esc(m.name)}</div>
-          <div class="fc-size">${_fmtSize(m.size)}</div>
-          <a class="fc-dl" href="${dlUrl}" download="${esc(m.name)}">⬇ Download</a>
-        </div>
-        <div class="fc-status done">✓</div>
-      `;
-      feed.appendChild(card);
-      feed.scrollTop = feed.scrollHeight;
-      toast('File received on computer!');
+    function toggleThemeDropdown() {
+      const dd = document.getElementById('theme-dropdown');
+      if (dd) dd.classList.toggle('hidden');
     }
 
-    // File input change handler
-    document.getElementById('file-inp').addEventListener('change', function () {
-      Array.from(this.files).forEach(_uploadFile);
-      this.value = ''; // reset so the same file can be re-sent
+    // Close theme dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+      const btn = document.getElementById('theme-menu-btn');
+      const dd = document.getElementById('theme-dropdown');
+      if (btn && dd && !btn.contains(e.target) && !dd.contains(e.target)) {
+        dd.classList.add('hidden');
+      }
     });
 
-    // ── Commands ──────────────────────────────────────────────────────────────
-    function doSend() {
-      const inp = document.getElementById('inp');
-      const txt = inp.value.trim();
-      if (!txt) return;
-      inp.value = '';
-      append('user', txt);
-      const enc  = _encrypt(txt);
-      const body = enc ? { enc } : { text: txt };
-      _authFetch('/api/command', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      });
-    }
+    // ───────────────────────────────────────────────────────────────────────────
+    // 2. WEB AUDIO SYNTHESIZER (HIGH-TECH SCIFI UI SOUNDS)
+    // ───────────────────────────────────────────────────────────────────────────
+    let audioCtx = null;
+    let audioEnabled = localStorage.getItem('max_audio_fx') !== 'false';
 
-    function doWake() {
-      sys('Sending wake signal…');
-      _authFetch('/api/wake', { method: 'POST' });
-    }
-
-    document.getElementById('inp').addEventListener('keydown', e => {
-      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); doSend(); }
-    });
-
-    // ── Toast ─────────────────────────────────────────────────────────────────
-    let _toastTimer;
-    function toast(msg) {
-      const t = document.getElementById('toast');
-      t.textContent = msg; t.classList.add('show');
-      clearTimeout(_toastTimer);
-      _toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
-    }
-
-    // ── Real-time Voice — PCM16 WebSocket → Gemini Live ──────────────────────
-    const micBtn  = document.getElementById('mic-btn');
-    let _voiceWs  = null;
-    let _audioCtx = null;
-    let _micStm   = null;
-    let _audioNd  = null;
-
-    function _micIdle() {
-      micBtn.textContent = 'MIC';
-      micBtn.title     = 'Voice — tap to speak';
-      micBtn.classList.remove('recording');
-    }
-
-    // Float32 PCM → resample to 16 kHz + convert to Int16
-    function _f32toPcm16(f32, srcRate) {
-      let s = f32;
-      if (srcRate !== 16000) {
-        const ratio = srcRate / 16000;
-        const len   = Math.round(f32.length / ratio);
-        s = new Float32Array(len);
-        for (let i = 0; i < len; i++)
-          s[i] = f32[Math.min(Math.round(i * ratio), f32.length - 1)];
+    function initAudio() {
+      if (!audioCtx && (window.AudioContext || window.webkitAudioContext)) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       }
-      const out = new Int16Array(s.length);
-      for (let i = 0; i < s.length; i++)
-        out[i] = Math.max(-32768, Math.min(32767, Math.round(s[i] * 32768)));
-      return out.buffer;
     }
 
-    function _showVoiceSetup() {
-      if (document.getElementById('voice-setup')) return; // show once
-      const origin = location.origin;
-      const card = document.createElement('div');
-      card.id = 'voice-setup';
-      card.style.cssText = [
-        'align-self:stretch', 'background:rgba(255,255,255,0.05)',
-        'border:1px solid rgba(255,255,255,0.12)', 'border-radius:14px',
-        'padding:16px 18px', 'font-size:13px', 'line-height:1.8',
-        'animation:pop 0.18s ease'
-      ].join(';');
-      card.innerHTML =
-        '<div style="font-weight:700;color:#f2f2f2;letter-spacing:.5px;margin-bottom:10px">Voice setup</div>' +
-        '<ol style="padding-left:18px;color:#a0a0a0;margin:0;display:flex;flex-direction:column;gap:4px">' +
-        '<li>Open a new tab → go to <span style="background:rgba(255,255,255,0.07);padding:1px 6px;border-radius:4px;font-family:\'JetBrains Mono\',ui-monospace,monospace;font-size:12px">chrome://flags</span></li>' +
-        '<li>Search: <strong style="color:#f2f2f2">Insecure origins treated as secure</strong></li>' +
-        '<li>Paste this URL into the box:<br><span id="flags-url" style="background:rgba(255,255,255,0.07);padding:2px 8px;border-radius:4px;font-family:\'JetBrains Mono\',ui-monospace,monospace;font-size:11px;user-select:all;cursor:pointer">' + esc(origin) + '</span></li>' +
-        '<li>Set to <strong style="color:#d8d8d8">Enabled</strong> → tap <strong style="color:#f2f2f2">Relaunch</strong></li>' +
-        '<li>Return here and tap MIC</li>' +
-        '</ol>';
-      feed.appendChild(card);
-      feed.scrollTop = feed.scrollHeight;
-      // tap to copy
-      card.querySelector('#flags-url').addEventListener('click', () => {
-        navigator.clipboard?.writeText(origin).then(() => toast('URL copied!')).catch(() => {});
-      });
-    }
-
-    async function doMic() {
-      if (_voiceWs) { _stopVoice(); return; }
-
-      if (!navigator.mediaDevices?.getUserMedia) {
-        _showVoiceSetup();
-        return;
+    function toggleAudioFx() {
+      audioEnabled = !audioEnabled;
+      localStorage.setItem('max_audio_fx', audioEnabled);
+      const iconSvg = document.getElementById('sound-icon-svg');
+      const settingsBtn = document.getElementById('settings-audio-toggle');
+      if (iconSvg) {
+        iconSvg.innerHTML = audioEnabled
+          ? '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>'
+          : '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line>';
       }
-      let stream;
+      if (settingsBtn) {
+        settingsBtn.textContent = audioEnabled ? 'ENABLED' : 'MUTED';
+        settingsBtn.className = audioEnabled ? 'px-3 py-1 rounded-lg bg-white text-black font-mono text-xs font-bold' : 'px-3 py-1 rounded-lg bg-[#222] text-[#777] font-mono text-xs font-bold';
+      }
+      showToast(audioEnabled ? "Audio Synthesizer: ON" : "Audio Synthesizer: MUTED");
+    }
+
+    function playCyberSound(type) {
+      if (!audioEnabled) return;
       try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true },
-        });
-      } catch (e) {
-        sys(e.name === 'NotAllowedError'
-          ? 'Microphone denied — tap the address bar lock and allow microphone.'
-          : 'Mic error: ' + e.message);
-        return;
+        initAudio();
+        if (!audioCtx) return;
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        const now = audioCtx.currentTime;
+
+        if (type === 'click') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(1200, now);
+          osc.frequency.exponentialRampToValueAtTime(400, now + 0.04);
+          gain.gain.setValueAtTime(0.08, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+          osc.start(now);
+          osc.stop(now + 0.04);
+        } else if (type === 'send') {
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(440, now);
+          osc.frequency.exponentialRampToValueAtTime(880, now + 0.08);
+          gain.gain.setValueAtTime(0.12, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+          osc.start(now);
+          osc.stop(now + 0.08);
+        } else if (type === 'radar-ping') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(960, now);
+          osc.frequency.exponentialRampToValueAtTime(620, now + 0.12);
+          gain.gain.setValueAtTime(0.05, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+          osc.start(now);
+          osc.stop(now + 0.12);
+        } else if (type === 'theme') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(523.25, now);
+          osc.frequency.setValueAtTime(659.25, now + 0.05);
+          gain.gain.setValueAtTime(0.1, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+          osc.start(now);
+          osc.stop(now + 0.12);
+        }
+      } catch(e) {}
+    }
+
+    // ───────────────────────────────────────────────────────────────────────────
+    // 3. CANVAS-POWERED SCIFI TACTICAL RADAR HUD
+    // ───────────────────────────────────────────────────────────────────────────
+    const radarCanvas = document.getElementById('radar-canvas');
+    let radarCtx = radarCanvas ? radarCanvas.getContext('2d') : null;
+    let radarAngle = 0;
+    let radarSpeed = 0.035;
+    let customPings = [];
+
+    const RADAR_BLIPS = [
+      { id: 'DELTA_04', angle: 1.8,  dist: 0.72, name: 'Subnet 4',   status: 'Nominal' },
+      { id: 'GW_09',    angle: 0.55, dist: 0.42, name: 'Gateway 09', status: 'Warning' },
+      { id: 'BETA_02',  angle: 4.2,  dist: 0.85, name: 'Node Beta',  status: 'Syncing' },
+      { id: 'ALPHA_01', angle: 3.1,  dist: 0.28, name: 'Cluster A',  status: 'Master' },
+      { id: 'CIPHER',   angle: 5.4,  dist: 0.60, name: 'Vault',      status: 'Encrypted' },
+    ];
+
+    function drawRadar() {
+      if (!radarCtx) return;
+      const w = radarCanvas.width;
+      const h = radarCanvas.height;
+      const cx = w / 2;
+      const cy = h / 2;
+      const radius = cx - 8;
+
+      radarCtx.clearRect(0, 0, w, h);
+
+      // Get current accent color
+      const accent = THEMES[currentTheme].hex;
+
+      // 1. Concentric Range Circles
+      radarCtx.lineWidth = 1;
+      const ringSteps = [0.25, 0.5, 0.75, 1.0];
+      ringSteps.forEach((step, idx) => {
+        radarCtx.beginPath();
+        radarCtx.arc(cx, cy, radius * step, 0, Math.PI * 2);
+        radarCtx.strokeStyle = idx === 3 ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.08)';
+        if (idx === 1 || idx === 2) {
+          radarCtx.setLineDash([3, 4]);
+        } else {
+          radarCtx.setLineDash([]);
+        }
+        radarCtx.stroke();
+      });
+      radarCtx.setLineDash([]);
+
+      // 2. Crosshair Grid Lines
+      radarCtx.beginPath();
+      radarCtx.moveTo(cx - radius, cy);
+      radarCtx.lineTo(cx + radius, cy);
+      radarCtx.moveTo(cx, cy - radius);
+      radarCtx.lineTo(cx, cy + radius);
+      radarCtx.strokeStyle = 'rgba(255,255,255,0.07)';
+      radarCtx.stroke();
+
+      // 3. Sweeping Beam with trailing gradient
+      radarAngle = (radarAngle + radarSpeed) % (Math.PI * 2);
+
+      const sweepSegments = 40;
+      for (let i = 0; i < sweepSegments; i++) {
+        const a1 = radarAngle - (i * (0.5 / sweepSegments));
+        const a2 = a1 + (0.5 / sweepSegments);
+        const alpha = (1 - (i / sweepSegments)) * 0.25;
+
+        radarCtx.beginPath();
+        radarCtx.moveTo(cx, cy);
+        radarCtx.arc(cx, cy, radius, a1, a2);
+        radarCtx.closePath();
+        radarCtx.fillStyle = accent === '#ffffff' ? `rgba(255,255,255,${alpha})` : `${accent}${Math.floor(alpha * 255).toString(16).padStart(2,'0')}`;
+        radarCtx.fill();
       }
 
-      // 16 kHz context (fall back to native rate — _f32toPcm16 resamples)
-      let ctx;
-      try { ctx = new AudioContext({ sampleRate: 16000 }); }
-      catch (_) { ctx = new AudioContext(); }
-      if (ctx.state === 'suspended') await ctx.resume();
+      // Sweep Leading Edge
+      radarCtx.beginPath();
+      radarCtx.moveTo(cx, cy);
+      radarCtx.lineTo(cx + Math.cos(radarAngle) * radius, cy + Math.sin(radarAngle) * radius);
+      radarCtx.strokeStyle = accent;
+      radarCtx.lineWidth = 1.5;
+      radarCtx.stroke();
 
-      const wsProto = location.protocol === 'https:' ? 'wss' : 'ws';
-      const ws = new WebSocket(
-        `${wsProto}://${location.host}/ws/phone-audio?token=${encodeURIComponent(_authToken)}`
-      );
-      ws.binaryType = 'arraybuffer';
+      // 4. Render Active Blips
+      RADAR_BLIPS.forEach(blip => {
+        const bx = cx + Math.cos(blip.angle) * (radius * blip.dist);
+        const by = cy + Math.sin(blip.angle) * (radius * blip.dist);
 
-      ws.onopen = async () => {
-        const rate = ctx.sampleRate;
-        const src  = ctx.createMediaStreamSource(stream);
+        // Angle difference from sweep
+        let diff = (radarAngle - blip.angle) % (Math.PI * 2);
+        if (diff < 0) diff += Math.PI * 2;
+        const lit = diff < 0.6;
 
-        // AudioWorklet (modern) — runs in dedicated audio thread
-        const wCode = `class J extends AudioWorkletProcessor{process(i){const c=i[0]?.[0];if(c)this.port.postMessage(c.slice());return true;}}registerProcessor('j',J);`;
+        radarCtx.beginPath();
+        radarCtx.arc(bx, by, lit ? 4 : 2.5, 0, Math.PI * 2);
+        radarCtx.fillStyle = blip.status === 'Warning' ? '#fbbf24' : (lit ? accent : 'rgba(255,255,255,0.3)');
+        radarCtx.fill();
+
+        if (lit) {
+          radarCtx.beginPath();
+          radarCtx.arc(bx, by, 8, 0, Math.PI * 2);
+          radarCtx.strokeStyle = accent;
+          radarCtx.lineWidth = 1;
+          radarCtx.stroke();
+
+          // Small tag label
+          radarCtx.font = '8px "JetBrains Mono"';
+          radarCtx.fillStyle = '#ffffff';
+          radarCtx.fillText(blip.id, bx + 6, by - 4);
+        }
+      });
+
+      // 5. Render Custom User Pings
+      for (let i = customPings.length - 1; i >= 0; i--) {
+        const p = customPings[i];
+        p.r += 1.5;
+        p.alpha -= 0.02;
+        if (p.alpha <= 0) {
+          customPings.splice(i, 1);
+          continue;
+        }
+        radarCtx.beginPath();
+        radarCtx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        radarCtx.strokeStyle = `rgba(255,255,255,${p.alpha})`;
+        radarCtx.lineWidth = 1.5;
+        radarCtx.stroke();
+      }
+
+      requestAnimationFrame(drawRadar);
+    }
+
+    if (radarCanvas) {
+      radarCanvas.addEventListener('click', (e) => {
+        const rect = radarCanvas.getBoundingClientRect();
+        const x = (e.clientX - rect.left) * (radarCanvas.width / rect.width);
+        const y = (e.clientY - rect.top) * (radarCanvas.height / rect.height);
+        customPings.push({ x, y, r: 2, alpha: 0.9 });
+        playCyberSound('radar-ping');
+        showToast(`Target Ping: (${Math.round(x)}, ${Math.round(y)})`);
+      });
+      requestAnimationFrame(drawRadar);
+    }
+
+    // ───────────────────────────────────────────────────────────────────────────
+    // 4. SYSTEM STATE MANAGEMENT (EXECUTING, THINKING, DEFENSE, IDLE)
+    // ───────────────────────────────────────────────────────────────────────────
+    function setSystemState(state) {
+      const name = document.getElementById('hud-state-name');
+      const coreSvg = document.getElementById('radar-core-svg');
+
+      if (name) name.textContent = state;
+
+      // Update button active styles
+      document.querySelectorAll('.state-btn').forEach(btn => {
+        if (btn.getAttribute('data-state') === state) {
+          btn.className = "state-btn px-3 py-1.5 rounded-lg text-xs font-mono font-medium transition-all duration-150 flex items-center gap-1.5 bg-white text-black font-semibold shadow-md";
+        } else {
+          btn.className = "state-btn px-3 py-1.5 rounded-lg text-xs font-mono font-medium transition-all duration-150 flex items-center gap-1.5 bg-[#14141a] hover:bg-[#1c1c24] text-[#a1a1aa] hover:text-white border border-[rgba(255,255,255,0.1)]";
+        }
+      });
+
+      if (state === 'EXECUTING') {
+        radarSpeed = 0.038;
+      } else if (state === 'THINKING') {
+        radarSpeed = 0.02;
+      } else if (state === 'DEFENSE') {
+        radarSpeed = 0.05;
+      } else if (state === 'IDLE') {
+        radarSpeed = 0.01;
+      }
+
+      playCyberSound('click');
+      addLogEntry('SYS', `Kernel State Transition -> ${state}`);
+      showToast(`System State: ${state}`);
+    }
+
+    // ───────────────────────────────────────────────────────────────────────────
+    // 5. MULTI-TAB VIEW SWITCHER (Command Center, Nodes, Telemetry, Settings)
+    // ───────────────────────────────────────────────────────────────────────────
+    function switchTab(tabId) {
+      document.querySelectorAll('.view-panel').forEach(panel => {
+        panel.classList.add('hidden');
+      });
+      const target = document.getElementById(`view-${tabId}`);
+      if (target) {
+        target.classList.remove('hidden');
+        target.classList.add('animate-pop');
+      }
+
+      document.querySelectorAll('.nav-tab-btn').forEach(btn => {
+        if (btn.getAttribute('data-tab') === tabId) {
+          btn.className = "nav-tab-btn active w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-xs font-medium tracking-wide transition-all duration-200 text-white bg-[rgba(255,255,255,0.08)] border border-[rgba(255,255,255,0.18)]";
+        } else {
+          btn.className = "nav-tab-btn w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-xs font-medium tracking-wide transition-all duration-200 text-[#a1a1aa] hover:text-white hover:bg-[rgba(255,255,255,0.04)]";
+        }
+      });
+
+      if (tabId === 'neural-nodes') renderNodesGrid();
+      if (tabId === 'telemetry-logs') renderTerminalLogs();
+
+      playCyberSound('click');
+      toggleSidebar(false);
+    }
+
+    function toggleSidebar(open) {
+      const sidebar = document.getElementById('sidebar');
+      const backdrop = document.getElementById('sidebar-backdrop');
+      if (!sidebar) return;
+      if (open) {
+        sidebar.classList.remove('-translate-x-full');
+        if (backdrop) backdrop.classList.remove('hidden');
+      } else {
+        sidebar.classList.add('-translate-x-full');
+        if (backdrop) backdrop.classList.add('hidden');
+      }
+    }
+
+    // ───────────────────────────────────────────────────────────────────────────
+    // 6. CHAT FEED & AUTONOMOUS AGENT COMMAND RESPONSE
+    // ───────────────────────────────────────────────────────────────────────────
+    function handleInputKeydown(e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        submitUserCommand();
+      }
+    }
+
+    function sendQuickPrompt(promptText) {
+      const input = document.getElementById('command-input');
+      if (input) {
+        input.value = promptText;
+        submitUserCommand();
+      }
+    }
+
+    function submitUserCommand() {
+      const input = document.getElementById('command-input');
+      const text = (input ? input.value : "").trim();
+      if (!text) return;
+
+      playCyberSound('send');
+      appendUserChatMessage(text);
+      input.value = "";
+
+      // Send to server if backend WebSocket / token is available
+      if (window._hasMaxWs && window._wsClient && window._wsClient.readyState === WebSocket.OPEN) {
         try {
-          const burl = URL.createObjectURL(new Blob([wCode], { type: 'application/javascript' }));
-          await ctx.audioWorklet.addModule(burl);
-          URL.revokeObjectURL(burl);
-          const nd = new AudioWorkletNode(ctx, 'j');
-          // Buffer to 1024 samples (64 ms at 16 kHz) before sending —
-          // matches PC mic chunk size, prevents queue flooding on the server.
-          let _pbuf = [], _plen = 0;
-          nd.port.onmessage = e => {
-            const chunk = new Int16Array(_f32toPcm16(e.data, rate));
-            _pbuf.push(chunk); _plen += chunk.length;
-            if (_plen >= 1024) {
-              const out = new Int16Array(_plen); let off = 0;
-              for (const c of _pbuf) { out.set(c, off); off += c.length; }
-              if (ws.readyState === 1) ws.send(out.buffer);
-              _pbuf = []; _plen = 0;
+          window._wsClient.send(JSON.stringify({ type: 'command', text: text }));
+        } catch(e) {}
+      } else {
+        // Fallback / Standalone simulation
+        simulateAgentResponse(text);
+      }
+    }
+
+    function appendUserChatMessage(text) {
+      const feed = document.getElementById('chat-feed');
+      if (!feed) return;
+
+      const time = new Date().toTimeString().split(' ')[0];
+      const div = document.createElement('div');
+      div.className = 'flex flex-col items-end gap-1.5 animate-pop';
+      div.innerHTML = `
+        <div class="flex items-center gap-2 font-mono text-[11px] text-[#71717a]">
+          <span>USER_01</span>
+          <span>${time}</span>
+        </div>
+        <div class="max-w-2xl bg-[#121218] border border-[rgba(255,255,255,0.14)] rounded-2xl rounded-tr-sm p-4 text-[#f5f5f7] text-sm leading-relaxed shadow-lg">
+          ${escapeHtml(text)}
+        </div>
+      `;
+      feed.appendChild(div);
+      feed.scrollTop = feed.scrollHeight;
+      addLogEntry('SYS', `User Command Dispatched: "${text.substring(0, 36)}..."`);
+    }
+
+    function simulateAgentResponse(query) {
+      setSystemState('THINKING');
+      const feed = document.getElementById('chat-feed');
+
+      setTimeout(() => {
+        setSystemState('EXECUTING');
+        const time = new Date().toTimeString().split(' ')[0];
+        const div = document.createElement('div');
+        div.className = 'flex flex-col items-start gap-1.5 animate-pop';
+
+        let responseHTML = "";
+        const lower = query.toLowerCase();
+
+        if (lower.includes('encrypt') || lower.includes('subnet') || lower.includes('handbook')) {
+          responseHTML = `
+            <p>Verification protocol complete. All 12 neural nodes adhere to RSA-4096 / SHA-3 cipher suites. Subnet 4 integrity score: <strong>1.000</strong> (Zero vulnerabilities found).</p>
+            <div class="bg-black/90 rounded-xl p-3 font-mono text-xs border border-[rgba(255,255,255,0.08)] space-y-1">
+              <div class="text-[#71717a]">// SUBNET 4 TELEMETRY PROBE</div>
+              <div>&gt; latency: 11.2ms</div>
+              <div>&gt; packet_loss: 0.00%</div>
+              <div class="theme-accent-text">&gt; cipher_status: ENCRYPTED_OK</div>
+            </div>
+          `;
+          addLogEntry('OK', 'Subnet 4 integrity audit passed');
+        } else if (lower.includes('backup')) {
+          responseHTML = `
+            <p>Node cluster backup sequence initiated. State snapshot serialized and sent to encrypted cold storage vault.</p>
+            <div class="bg-black/90 rounded-xl p-3 font-mono text-xs border border-[rgba(255,255,255,0.08)] space-y-1">
+              <div>&gt; archive: max_cluster_beta_snap.tar.gz</div>
+              <div>&gt; size: 482 MB (Compressed)</div>
+              <div class="text-white">&gt; checksum: SHA256:7f83b1657ff1fc53b92dc18148a1d65b</div>
+            </div>
+          `;
+          addLogEntry('TOOL', 'Automated cluster backup completed');
+        } else {
+          responseHTML = `
+            <p>Directive received: "<em>${escapeHtml(query)}</em>". Autonomous agents scheduled across distributed pipeline.</p>
+            <div class="bg-black/90 rounded-xl p-3 font-mono text-xs border border-[rgba(255,255,255,0.08)] space-y-1">
+              <div>&gt; worker: AGENT_ORCHESTRATOR_V4</div>
+              <div>&gt; status: TASK_RESOLVED</div>
+              <div class="theme-accent-text">&gt; return_code: 0 (SUCCESS)</div>
+            </div>
+          `;
+          addLogEntry('OK', `Task execution completed for: ${query.substring(0, 24)}`);
+        }
+
+        div.innerHTML = `
+          <div class="flex items-center gap-2 font-mono text-[11px] theme-accent-text">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="11" width="18" height="10" rx="2"></rect>
+              <circle cx="12" cy="5" r="2"></circle>
+              <path d="M12 7v4M8 16h0.01M16 16h0.01"></path>
+            </svg>
+            <span class="font-bold">MAX_AI</span>
+            <span class="text-[#71717a]">${time}</span>
+          </div>
+          <div class="max-w-2xl bg-[#0e0e12] border border-[rgba(255,255,255,0.12)] rounded-2xl rounded-tl-sm p-4 text-[#f5f5f7] text-sm space-y-3 shadow-lg">
+            ${responseHTML}
+          </div>
+        `;
+        feed.appendChild(div);
+        feed.scrollTop = feed.scrollHeight;
+        playCyberSound('click');
+        setSystemState('IDLE');
+      }, 1000);
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/[&<>"']/g, m => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[m]));
+    }
+
+    function copyCode(btn) {
+      navigator.clipboard.writeText("verify_subnet_encryption.sh --target node_cluster_delta_4");
+      showToast("Code copied to clipboard");
+    }
+
+    // ───────────────────────────────────────────────────────────────────────────
+    // 7. VOICE RECOGNITION & AUDIO WAVEFORM VISUALIZER
+    // ───────────────────────────────────────────────────────────────────────────
+    let isMicActive = false;
+    let recognition = null;
+    let waveAnimId = null;
+
+    function toggleMic() {
+      isMicActive = !isMicActive;
+      const btn = document.getElementById('mic-btn');
+      const viz = document.getElementById('voice-viz-container');
+
+      if (isMicActive) {
+        btn.className = "p-2.5 rounded-xl bg-white text-black font-bold shadow-lg transition-all animate-pulse";
+        if (viz) viz.classList.remove('hidden');
+        startVoiceWaveform();
+        startSpeechRecognition();
+        showToast("Voice Mode: Active");
+      } else {
+        btn.className = "p-2.5 rounded-xl bg-[#14141c] hover:bg-[#1c1c28] border border-[rgba(255,255,255,0.12)] text-[#a1a1aa] hover:text-white transition-all";
+        if (viz) viz.classList.add('hidden');
+        stopVoiceWaveform();
+        stopSpeechRecognition();
+        showToast("Voice Mode: Inactive");
+      }
+      playCyberSound('click');
+    }
+
+    function startSpeechRecognition() {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) return;
+      try {
+        recognition = new SpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = true;
+        recognition.onresult = (e) => {
+          const transcript = Array.from(e.results).map(r => r[0].transcript).join('');
+          const inp = document.getElementById('command-input');
+          if (inp) inp.value = transcript;
+        };
+        recognition.onend = () => {
+          if (isMicActive) toggleMic();
+        };
+        recognition.start();
+      } catch(e) {}
+    }
+
+    function stopSpeechRecognition() {
+      if (recognition) {
+        try { recognition.stop(); } catch(e) {}
+        recognition = null;
+      }
+    }
+
+    function startVoiceWaveform() {
+      const canvas = document.getElementById('voice-waveform');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      let offset = 0;
+
+      function renderWave() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = THEMES[currentTheme].hex;
+        ctx.beginPath();
+        for (let x = 0; x < canvas.width; x++) {
+          const y = (canvas.height / 2) + Math.sin((x * 0.15) + offset) * (Math.random() * 6 + 2);
+          if (x === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+        offset += 0.25;
+        waveAnimId = requestAnimationFrame(renderWave);
+      }
+      renderWave();
+    }
+
+    function stopVoiceWaveform() {
+      if (waveAnimId) {
+        cancelAnimationFrame(waveAnimId);
+        waveAnimId = null;
+      }
+    }
+
+    function handleFileUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      showToast(`Attached: ${file.name} (${Math.round(file.size / 1024)} KB)`);
+      addLogEntry('TOOL', `File attached for processing: ${file.name}`);
+    }
+
+    // ───────────────────────────────────────────────────────────────────────────
+    // 8. TELEMETRY LOGS ENGINE & DRILLDOWN
+    // ───────────────────────────────────────────────────────────────────────────
+    const LOG_HISTORY = [
+      { type: 'OK',   title: 'Node Cluster Delta Sync Completed', time: '14:41:02', details: 'checksum: 0x98f2b189a0c\nduration: 142ms\nnodes_updated: 12' },
+      { type: 'TOOL', title: 'verify_subnet_encryption.sh executed', time: '14:39:55', details: 'exit_code: 0\nbandwidth: 4.2 MB/s' },
+      { type: 'WARN', title: 'High latency detected on gateway 09', time: '14:35:10', details: 'latency: 320ms\naction: auto_rerouted_through_node_03' },
+      { type: 'SYS',  title: 'Neural engine weights calibrated', time: '14:30:00', details: 'model: MAX-v4.8-core\nprecision: FP16' },
+    ];
+
+    function toggleLogDetail(el) {
+      const detail = el.querySelector('.hidden, .block');
+      if (detail) {
+        detail.classList.toggle('hidden');
+        detail.classList.toggle('block');
+      }
+      playCyberSound('click');
+    }
+
+    function filterLogs(category) {
+      document.querySelectorAll('.log-filter-btn').forEach(btn => {
+        if (btn.getAttribute('data-type') === category) {
+          btn.className = "log-filter-btn py-1.5 rounded-lg bg-white text-black font-bold transition-all";
+        } else {
+          btn.className = "log-filter-btn py-1.5 rounded-lg bg-[#14141c] text-[#a1a1aa] hover:text-white transition-all";
+        }
+      });
+
+      document.querySelectorAll('.log-item').forEach(item => {
+        const cat = item.getAttribute('data-category');
+        if (category === 'ALL' || cat === category) {
+          item.style.display = 'flex';
+        } else {
+          item.style.display = 'none';
+        }
+      });
+      playCyberSound('click');
+    }
+
+    function addLogEntry(type, title, details = "") {
+      const time = new Date().toTimeString().split(' ')[0];
+      LOG_HISTORY.unshift({ type, title, time, details });
+
+      const list = document.getElementById('log-list');
+      if (list) {
+        const item = document.createElement('div');
+        const color = type === 'OK' ? 'theme-accent-text' : (type === 'WARN' ? 'text-amber-400' : 'text-white');
+        item.className = 'log-item bg-[#101016] border border-[rgba(255,255,255,0.08)] hover:border-white/20 rounded-xl p-3 flex flex-col gap-1 cursor-pointer transition-all animate-pop';
+        item.setAttribute('data-category', type);
+        item.setAttribute('onclick', 'toggleLogDetail(this)');
+        item.innerHTML = `
+          <div class="flex items-center justify-between font-mono text-[10px]">
+            <span class="${color} font-bold">[${type}]</span>
+            <span class="text-[#71717a]">${time}</span>
+          </div>
+          <div class="text-xs text-white font-medium">${escapeHtml(title)}</div>
+          ${details ? `<div class="hidden font-mono text-[10px] text-[#a1a1aa] pt-2 mt-1 border-t border-white/10 space-y-0.5">${escapeHtml(details)}</div>` : ''}
+        `;
+        list.prepend(item);
+      }
+
+      // Update counter
+      const pill = document.getElementById('log-counter-pill');
+      if (pill) pill.textContent = `${LOG_HISTORY.length} evt`;
+    }
+
+    function clearLogs() {
+      const list = document.getElementById('log-list');
+      if (list) list.innerHTML = "";
+      showToast("Logs Cleared");
+      playCyberSound('click');
+    }
+
+    function exportLogs() {
+      const blob = new Blob([JSON.stringify(LOG_HISTORY, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `max_telemetry_logs_${Date.now()}.json`;
+      a.click();
+      showToast("Logs exported as JSON");
+    }
+
+    // ───────────────────────────────────────────────────────────────────────────
+    // 9. NEURAL NODES MATRIX RENDERER (VIEW 2)
+    // ───────────────────────────────────────────────────────────────────────────
+    const NODE_NAMES = [
+      "Alpha-01", "Beta-02", "Gamma-03", "Delta-04",
+      "Epsilon-05", "Zeta-06", "Eta-07", "Theta-08",
+      "Gateway-09", "Kappa-10", "Lambda-11", "Mu-12"
+    ];
+
+    function renderNodesGrid() {
+      const container = document.getElementById('nodes-grid');
+      if (!container) return;
+      container.innerHTML = "";
+
+      NODE_NAMES.forEach((name, idx) => {
+        const cpu = Math.floor(12 + Math.random() * 45);
+        const mem = (1.2 + Math.random() * 2.1).toFixed(1);
+        const ping = Math.floor(8 + Math.random() * 18);
+        const isWarning = name === "Gateway-09";
+
+        const card = document.createElement('div');
+        card.className = "glass-panel rounded-2xl p-4 border border-[rgba(255,255,255,0.1)] hover:border-white/30 transition-all flex flex-col gap-3";
+        card.innerHTML = `
+          <div class="flex items-center justify-between pb-2 border-b border-white/10">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full ${isWarning ? 'bg-amber-400' : 'theme-accent-bg'} ${isWarning ? 'animate-ping' : ''}"></span>
+              <span class="font-mono text-xs font-bold text-white">${name}</span>
+            </div>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded ${isWarning ? 'bg-amber-500/20 text-amber-400' : 'bg-white/10 text-white'}">
+              ${isWarning ? 'REROUTED' : 'ONLINE'}
+            </span>
+          </div>
+
+          <div class="space-y-1.5 font-mono text-[11px]">
+            <div class="flex justify-between text-[#a1a1aa]">
+              <span>CPU Load:</span>
+              <span class="text-white">${cpu}%</span>
+            </div>
+            <div class="w-full bg-[#16161c] h-1.5 rounded-full overflow-hidden">
+              <div class="theme-accent-bg h-full" style="width: ${cpu}%"></div>
+            </div>
+            <div class="flex justify-between text-[#a1a1aa] pt-1">
+              <span>RAM Used:</span>
+              <span class="text-white">${mem} / 4.0 GB</span>
+            </div>
+            <div class="flex justify-between text-[#a1a1aa]">
+              <span>Latency:</span>
+              <span class="${isWarning ? 'text-amber-400' : 'theme-accent-text'} font-bold">${ping} ms</span>
+            </div>
+          </div>
+
+          <div class="pt-2 border-t border-white/5 flex gap-2">
+            <button onclick="pingNode('${name}')" class="flex-1 py-1.5 rounded-lg bg-[#14141c] hover:bg-[#20202a] text-white font-mono text-[10px] border border-white/10 transition-colors">PING</button>
+            <button onclick="inspectNode('${name}')" class="flex-1 py-1.5 rounded-lg bg-white/10 hover:bg-white text-white hover:text-black font-mono text-[10px] transition-colors">INSPECT</button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function pingNode(name) {
+      showToast(`Pinging ${name}... 11ms OK`);
+      playCyberSound('click');
+    }
+
+    function inspectNode(name) {
+      showToast(`Telemetry inspect telemetry stream for ${name}`);
+      playCyberSound('click');
+    }
+
+    function pingAllNodes() {
+      showToast("Broadcast ping sent to 12/12 nodes. All clusters nominal.");
+      playCyberSound('theme');
+    }
+
+    // ───────────────────────────────────────────────────────────────────────────
+    // 10. TELEMETRY CONSOLE LOGS (VIEW 3)
+    // ───────────────────────────────────────────────────────────────────────────
+    let isStreamPaused = false;
+    let consoleInterval = null;
+
+    function renderTerminalLogs() {
+      const consoleEl = document.getElementById('terminal-console');
+      if (!consoleEl || consoleEl.children.length > 0) return;
+
+      const seedLines = [
+        "[00:00:01] MAX_KERNEL_INIT: Bootstrapping cyber architecture core v4.8...",
+        "[00:00:02] CRYPTO_INIT: RSA-4096 / AES-256 cipher suite primed with hardware RNG",
+        "[00:00:03] NETWORK_INIT: 12 distributed node nodes handshaking over TLS 1.3",
+        "[00:00:04] NEURAL_CORE: Memory allocation 4.2GB, FP16 precision weights mapped",
+        "[00:00:05] TELEMETRY_ONLINE: Subnet tunnels verified, listening on port 8000"
+      ];
+
+      seedLines.forEach(line => {
+        const p = document.createElement('div');
+        p.textContent = line;
+        consoleEl.appendChild(p);
+      });
+
+      if (!consoleInterval) {
+        consoleInterval = setInterval(() => {
+          if (isStreamPaused) return;
+          const time = new Date().toTimeString().split(' ')[0];
+          const msgs = [
+            `[${time}] KERNEL: Heartbeat probe node_cluster_delta_4 -> 12ms`,
+            `[${time}] MEMORY_GC: Reclaimed 142MB buffer from stream pipeline`,
+            `[${time}] INFERENCE: Token generation bandwidth: 88.4 tok/s`,
+            `[${time}] SECURITY: Zero anomaly signals reported across gateway perimeter`
+          ];
+          const chosen = msgs[Math.floor(Math.random() * msgs.length)];
+          const p = document.createElement('div');
+          p.textContent = chosen;
+          consoleEl.appendChild(p);
+          consoleEl.scrollTop = consoleEl.scrollHeight;
+        }, 4000);
+      }
+    }
+
+    function toggleStreamPause() {
+      isStreamPaused = !isStreamPaused;
+      const btn = document.getElementById('stream-pause-btn');
+      if (btn) btn.textContent = isStreamPaused ? 'Resume' : 'Pause';
+      showToast(isStreamPaused ? "Console stream paused" : "Console stream resumed");
+    }
+
+    function searchTerminalLogs(query) {
+      const consoleEl = document.getElementById('terminal-console');
+      if (!consoleEl) return;
+      Array.from(consoleEl.children).forEach(child => {
+        if (!query || child.textContent.toLowerCase().includes(query.toLowerCase())) {
+          child.style.display = 'block';
+        } else {
+          child.style.display = 'none';
+        }
+      });
+    }
+
+    // ───────────────────────────────────────────────────────────────────────────
+    // 11. TOAST NOTIFICATIONS & CLOCK TICKER
+    // ───────────────────────────────────────────────────────────────────────────
+    let toastTimeout = null;
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      const text = document.getElementById('toast-text');
+      if (!toast || !text) return;
+      text.textContent = msg;
+      toast.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-[-10px]');
+      toast.classList.add('opacity-100', 'translate-y-0');
+
+      if (toastTimeout) clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toast.classList.remove('opacity-100', 'translate-y-0');
+        toast.classList.add('opacity-0', 'pointer-events-none', 'translate-y-[-10px]');
+      }, 2600);
+    }
+
+    function updateLiveClock() {
+      const clock = document.getElementById('live-clock');
+      if (clock) {
+        const now = new Date();
+        clock.textContent = now.toISOString().substring(11, 19) + " UTC";
+      }
+    }
+    setInterval(updateLiveClock, 1000);
+    updateLiveClock();
+
+    // ───────────────────────────────────────────────────────────────────────────
+    // 12. INITIALIZATION ON PAGE LOAD
+    // ───────────────────────────────────────────────────────────────────────────
+    window.addEventListener('DOMContentLoaded', () => {
+      setTheme(currentTheme);
+
+      // Check for MAX-AGENT server credentials if running through FastAPI
+      const authToken = sessionStorage.getItem('max_token');
+      if (authToken) {
+        const stateEl = document.getElementById('connection-state');
+        if (stateEl) stateEl.textContent = "CONNECTED (LIVE)";
+        window._hasMaxWs = true;
+
+        try {
+          const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+          const wsUrl = `${proto}://${location.host}/ws?token=${encodeURIComponent(authToken)}`;
+          const ws = new WebSocket(wsUrl);
+          window._wsClient = ws;
+          ws.onopen = () => showToast("Live MAX-AGENT WebSocket Connected");
+          ws.onmessage = (e) => {
+            const data = JSON.parse(e.data);
+            if (data.type === 'log') {
+              addLogEntry('OK', `[${data.speaker}] ${data.text}`);
             }
           };
-          src.connect(nd);
-          _audioNd = nd;
-        } catch (_) {
-          // ScriptProcessor fallback (deprecated, still works everywhere)
-          const sp = ctx.createScriptProcessor(4096, 1, 1);
-          sp.onaudioprocess = e => {
-            if (ws.readyState === 1) ws.send(_f32toPcm16(e.inputBuffer.getChannelData(0), rate));
-          };
-          src.connect(sp); sp.connect(ctx.destination);
-          _audioNd = sp;
-        }
-
-        micBtn.innerHTML = '⏹';
-        micBtn.title     = 'Tap to stop';
-        micBtn.classList.add('recording');
-        sys('Voice live — speak now');
-        toast('MIC LIVE');
-      };
-
-      ws.onclose = () => { _stopVoice(); };
-      ws.onerror = () => { sys('Voice connection failed.'); _stopVoice(); };
-
-      _voiceWs  = ws;
-      _audioCtx = ctx;
-      _micStm   = stream;
-    }
-
-    function _stopVoice() {
-      if (_audioNd)  { try { _audioNd.disconnect(); }  catch (_) {}; _audioNd  = null; }
-      if (_audioCtx) { try { _audioCtx.close(); }      catch (_) {}; _audioCtx = null; }
-      if (_micStm)   { _micStm.getTracks().forEach(t => t.stop()); _micStm = null; }
-      if (_voiceWs)  {
-        const w = _voiceWs; _voiceWs = null;
-        if (w.readyState < 2) w.close();
+        } catch(e) {}
       }
-      _micIdle();
-    }
+    });
   </script>
 </body>
 </html>
-
-

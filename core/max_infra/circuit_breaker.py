@@ -65,3 +65,7 @@ class CircuitBreaker:
             self._trip_time = None
             self._state = CircuitState.CLOSED
             logger.info("CircuitBreaker reset to CLOSED for '%s'", target)
+
+    def reset_all(self) -> None:
+        """Manually reset the circuit breaker back to CLOSED state."""
+        self.record_success()

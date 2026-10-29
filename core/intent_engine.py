@@ -88,7 +88,14 @@ class IntentEngine:
         if re.search(r"^\s*undo(\s+last\s+action)?\s*\.?$", lower):
             return "undo"
 
-        # 4. Multi-task / compound requests
+        # 4. 33-Agent Swarm Inquiries
+        if re.search(r"\b(33\s*agents?|agents?\s*swarm|swarm\s*agents?)\b", lower) or (
+            "agent" in lower and any(w in lower for w in ["what are", "who are", "list", "tell me about", "explain", "describe", "show"])
+        ):
+            return "get_swarm_agents"
+
+
+        # 5. Multi-task / compound requests
         if self._is_compound(text):
             return "TaskGraph"
 
@@ -279,6 +286,7 @@ class IntentEngine:
                 channel=channel,
             )
 
+
         # Open Application
         m_app = re.match(r"^open\s+(.+)", lower)
         if m_app:
@@ -341,6 +349,23 @@ class IntentEngine:
                 channel=channel,
             )
 
+        # 33-Agent Swarm Inquiries
+        if re.search(r"\b(33\s*agents?|agents?\s*swarm|swarm\s*agents?)\b", lower) or (
+            "agent" in lower and any(w in lower for w in ["what are", "who are", "list", "tell me about", "explain", "describe", "show"])
+        ):
+            cluster = "all"
+            for c in ["core", "software", "productivity", "safety", "health"]:
+                if c in lower:
+                    cluster = c
+                    break
+            return TaskIntent(
+                raw_input=text,
+                action="get_swarm_agents",
+                target=cluster,
+                parameters={"cluster": cluster},
+                channel=channel,
+            )
+
         # Generic fallback
         return TaskIntent(
             raw_input=text,
@@ -348,3 +373,21 @@ class IntentEngine:
             parameters={"query": text},
             channel=channel,
         )
+
+
+if __name__ == "__main__":
+    import sys
+    query = " ".join(sys.argv[1:]) if len(sys.argv) > 1 else "Open VS Code"
+    engine = IntentEngine()
+    parsed = engine.parse(query)
+    route = engine.route_name(query)
+    print("=" * 60)
+    print(f"Utterance: {query}")
+    print(f"Canonical Route: {route}")
+    if isinstance(parsed, TaskGraph):
+        print(f"TaskGraph DAG: {len(parsed.nodes)} nodes, {len(parsed.edges)} edges")
+        for node in parsed.topological_sort():
+            print(f"  - Node {node.node_id}: action={node.intent.action}, target={node.intent.target}")
+    else:
+        print(f"TaskIntent: action={parsed.action}, target={parsed.target}, params={parsed.parameters}")
+    print("=" * 60)

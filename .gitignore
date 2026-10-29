@@ -1,31 +1,42 @@
-# ── CyberBlack AI-agent MAX + MAX OS + LAYA: Git Ignore ─────────────────────────────────────
-# Everything listed here is created by the app on first run or during testing.
-# A fresh clone boots straight to setup screen with clean defaults.
+# ── CyberBlack AI-agent MAX / MAX OS: Git Ignore ─────────────────────────────
+# Automatically generated runtime artifacts, local databases, secrets, and caches.
+# A fresh clone initializes clean defaults and auto-creates necessary local state.
 
 # ── Secrets & Credentials ─────────────────────────────────────────────────────
-# Gemini API keys & per-plugin credentials
 config/api_keys.json
-# Dashboard TLS private keys and certs
 config/certs/
-# Linked WhatsApp session data
 config/whatsapp_web/
-# Google OAuth tokens (Gmail / Calendar)
 **/token*.json
-# Google OAuth client secrets
 **/client_secret*.json
 *credentials*.json
 .env
 .env.*
+!.env.example
 
-# ── Persistent Storage & Databases ────────────────────────────────────────────
-memory/*.db
-core/max_infra/*.db
+# ── Persistent Storage & Local Databases ──────────────────────────────────────
+*.db
+*.db-wal
+*.db-shm
 *.sqlite
 *.sqlite3
+*.sqlite-wal
+*.sqlite-shm
+max_state.db
+memory/*.db
+core/max_infra/*.db
+memory/notes.json
+memory/api_budget.json
+memory/budget_tracking.json
+memory/backups/*
+!memory/backups/.gitkeep
+eval_results_*.json
 
 # ── Autonomous Snapshots & Rollback Data ──────────────────────────────────────
 .snapshots/
 temp_laya/
+scratch/
+.quarantine/
+.agents/
 
 # ── Python Build & Packaging ──────────────────────────────────────────────────
 __pycache__/
@@ -37,9 +48,12 @@ dist/
 *.egg-info/
 .eggs/
 
-# ── Testing & Code Coverage ───────────────────────────────────────────────────
+# ── Testing, Linting & Code Coverage ──────────────────────────────────────────
 .pytest_cache/
+.ruff_cache/
+.mypy_cache/
 .coverage
+.coverage.*
 htmlcov/
 coverage.xml
 
@@ -53,6 +67,7 @@ ENV/
 .vscode/
 .idea/
 *.swp
+*.swo
 .DS_Store
 Thumbs.db
 desktop.ini
@@ -61,6 +76,8 @@ desktop.ini
 *.log
 logs/*
 !logs/.gitkeep
+notes/*
+!notes/.gitkeep
 downloads/*
 !downloads/.gitkeep
 screenshots/*

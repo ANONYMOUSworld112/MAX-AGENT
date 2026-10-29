@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import json
 import math
@@ -23,12 +23,12 @@ else:
 
 from PyQt6.QtCore import (
     QEasingCurve, QMimeData, QObject, QParallelAnimationGroup, QPointF,
-    QPropertyAnimation, QRect, QRectF, QSize, Qt, QTimer, QUrl, pyqtSignal,
+    QProcess, QPropertyAnimation, QPoint, QRect, QRectF, QSize, Qt, QTimer, QUrl, pyqtSignal,
 )
 from PyQt6.QtGui import (
     QBrush, QColor, QDragEnterEvent, QDropEvent, QFont, QPalette,
     QFontDatabase, QKeySequence, QLinearGradient, QPainter, QPainterPath,
-    QPen, QPixmap, QRadialGradient, QShortcut,
+    QDesktopServices, QPen, QPixmap, QRadialGradient, QShortcut,
 )
 from PyQt6.QtWidgets import (
     QApplication, QComboBox, QFileDialog, QFrame, QHBoxLayout, QLabel, QLineEdit,
@@ -80,6 +80,9 @@ _DEFAULT_W, _DEFAULT_H = 1120, 760
 _MIN_W,     _MIN_H     = 860, 580
 _LEFT_W  = 148
 _RIGHT_W = 260
+_RIGHT_MIN_W = 180
+_RIGHT_MAX_W = 520
+_CENTER_MIN_W = 340
 
 _OS = platform.system()  # "Windows" | "Darwin" | "Linux"
 _UI_FONT_CANDIDATES = (
@@ -120,29 +123,89 @@ def _resolve_ui_fonts() -> tuple[str, str]:
 
 
 class C:
-    # Bright monochrome surfaces with restrained gray borders and ink.
-    BG        = "#f7f7f7"
-    PANEL     = "#ffffff"
-    PANEL2    = "#f2f2f2"
-    BORDER    = "#e5e5e5"
-    BORDER_B  = "#d2d2d2"
-    BORDER_A  = "#dddddd"
-    PRI       = "#111111"
-    PRI_DIM   = "#555555"
-    PRI_GHO   = "#ededed"
-    ACC       = "#333333"
-    ACC2      = "#555555"
-    GREEN     = "#222222"
-    GREEN_D   = "#666666"
-    RED       = "#111111"
-    MUTED_C   = "#555555"
-    TEXT      = "#252525"
-    TEXT_DIM  = "#777777"
-    TEXT_MED  = "#555555"
+    # Cyber Monochrome (Pure Black & White) surfaces, obsidian backgrounds, titanium white accents
+    BG        = "#070709"
+    PANEL     = "#0e0e12"
+    PANEL2    = "#14141a"
+    BORDER    = "#22222a"
+    BORDER_B  = "#383846"
+    BORDER_A  = "#2c2c36"
+    PRI       = "#ffffff"
+    PRI_DIM   = "#a1a1aa"
+    PRI_GHO   = "#1c1c24"
+    ACC       = "#ffffff"
+    ACC2      = "#d4d4d8"
+    GREEN     = "#ffffff"
+    GREEN_D   = "#a1a1aa"
+    RED       = "#ffffff"
+    MUTED_C   = "#71717a"
+    TEXT      = "#f4f4f5"
+    TEXT_DIM  = "#8e8e96"
+    TEXT_MED  = "#a1a1aa"
     WHITE     = "#ffffff"
-    DARK      = "#ffffff"
-    BAR_BG    = "#e8e8e8"
+    DARK      = "#070709"
+    BAR_BG    = "#181820"
 
+
+_MONO_PALETTE = {
+    "BG": "#070709", "PANEL": "#0e0e12", "PANEL2": "#14141a",
+    "BORDER": "#22222a", "BORDER_B": "#383846", "BORDER_A": "#2c2c36",
+    "PRI": "#ffffff", "PRI_DIM": "#a1a1aa", "PRI_GHO": "#1c1c24",
+    "ACC": "#ffffff", "ACC2": "#d4d4d8", "GREEN": "#ffffff",
+    "GREEN_D": "#a1a1aa", "RED": "#ffffff", "MUTED_C": "#71717a",
+    "TEXT": "#f4f4f5", "TEXT_DIM": "#8e8e96", "TEXT_MED": "#a1a1aa",
+    "WHITE": "#ffffff", "DARK": "#070709", "BAR_BG": "#181820",
+}
+
+_CYAN_PALETTE = {
+    "BG": "#060a0f", "PANEL": "#0a1219", "PANEL2": "#101b24",
+    "BORDER": "#163040", "BORDER_B": "#1e4c66", "BORDER_A": "#183b50",
+    "PRI": "#00f0ff", "PRI_DIM": "#5ce1e6", "PRI_GHO": "#0e2430",
+    "ACC": "#00f0ff", "ACC2": "#38bdf8", "GREEN": "#00f0ff",
+    "GREEN_D": "#0284c7", "RED": "#f43f5e", "MUTED_C": "#475569",
+    "TEXT": "#e0f2fe", "TEXT_DIM": "#7dd3fc", "TEXT_MED": "#38bdf8",
+    "WHITE": "#ffffff", "DARK": "#060a0f", "BAR_BG": "#0f222f",
+}
+
+_EMERALD_PALETTE = {
+    "BG": "#060d09", "PANEL": "#0b1810", "PANEL2": "#112318",
+    "BORDER": "#173b24", "BORDER_B": "#225c38", "BORDER_A": "#1c482c",
+    "PRI": "#00ff66", "PRI_DIM": "#4ade80", "PRI_GHO": "#0f2d1a",
+    "ACC": "#00ff66", "ACC2": "#10b981", "GREEN": "#00ff66",
+    "GREEN_D": "#059669", "RED": "#f87171", "MUTED_C": "#475569",
+    "TEXT": "#dcfce7", "TEXT_DIM": "#86efac", "TEXT_MED": "#4ade80",
+    "WHITE": "#ffffff", "DARK": "#060d09", "BAR_BG": "#0f2b17",
+}
+
+_AMBER_PALETTE = {
+    "BG": "#0c0905", "PANEL": "#17120a", "PANEL2": "#221b0e",
+    "BORDER": "#3a2c14", "BORDER_B": "#5c451e", "BORDER_A": "#483618",
+    "PRI": "#ffb703", "PRI_DIM": "#fbbf24", "PRI_GHO": "#291f0f",
+    "ACC": "#ffb703", "ACC2": "#f59e0b", "GREEN": "#ffb703",
+    "GREEN_D": "#d97706", "RED": "#ef4444", "MUTED_C": "#64748b",
+    "TEXT": "#fef3c7", "TEXT_DIM": "#fcd34d", "TEXT_MED": "#fbbf24",
+    "WHITE": "#ffffff", "DARK": "#0c0905", "BAR_BG": "#291e0c",
+}
+
+_VIOLET_PALETTE = {
+    "BG": "#09060f", "PANEL": "#130d20", "PANEL2": "#1c142e",
+    "BORDER": "#322352", "BORDER_B": "#503784", "BORDER_A": "#3f2b68",
+    "PRI": "#c084fc", "PRI_DIM": "#a855f7", "PRI_GHO": "#25193e",
+    "ACC": "#c084fc", "ACC2": "#8b5cf6", "GREEN": "#c084fc",
+    "GREEN_D": "#7c3aed", "RED": "#f43f5e", "MUTED_C": "#64748b",
+    "TEXT": "#f3e8ff", "TEXT_DIM": "#d8b4fe", "TEXT_MED": "#c084fc",
+    "WHITE": "#ffffff", "DARK": "#09060f", "BAR_BG": "#23173b",
+}
+
+_CRIMSON_PALETTE = {
+    "BG": "#0f0608", "PANEL": "#1c0b0e", "PANEL2": "#291015",
+    "BORDER": "#481b22", "BORDER_B": "#722a36", "BORDER_A": "#5a222c",
+    "PRI": "#ff3366", "PRI_DIM": "#fb7185", "PRI_GHO": "#36131b",
+    "ACC": "#ff3366", "ACC2": "#e11d48", "GREEN": "#ff3366",
+    "GREEN_D": "#be123c", "RED": "#ff3366", "MUTED_C": "#64748b",
+    "TEXT": "#ffe4e6", "TEXT_DIM": "#fda4af", "TEXT_MED": "#fb7185",
+    "WHITE": "#ffffff", "DARK": "#0f0608", "BAR_BG": "#331219",
+}
 
 _LIGHT_PALETTE = {
     "BG": "#f7f7f7", "PANEL": "#ffffff", "PANEL2": "#f2f2f2",
@@ -153,22 +216,38 @@ _LIGHT_PALETTE = {
     "TEXT": "#252525", "TEXT_DIM": "#777777", "TEXT_MED": "#555555",
     "WHITE": "#ffffff", "DARK": "#ffffff", "BAR_BG": "#e8e8e8",
 }
-_DARK_PALETTE = {
-    "BG": "#090909", "PANEL": "#111111", "PANEL2": "#191919",
-    "BORDER": "#292929", "BORDER_B": "#454545", "BORDER_A": "#363636",
-    "PRI": "#f2f2f2", "PRI_DIM": "#b7b7b7", "PRI_GHO": "#252525",
-    "ACC": "#d0d0d0", "ACC2": "#bcbcbc", "GREEN": "#dedede",
-    "GREEN_D": "#a8a8a8", "RED": "#f2f2f2", "MUTED_C": "#c8c8c8",
-    "TEXT": "#c9c9c9", "TEXT_DIM": "#858585", "TEXT_MED": "#a7a7a7",
-    "WHITE": "#ffffff", "DARK": "#0d0d0d", "BAR_BG": "#202020",
+
+_DARK_PALETTE = _MONO_PALETTE
+
+_THEME_PALETTES = {
+    "mono":    _MONO_PALETTE,
+    "dark":    _MONO_PALETTE,
+    "cyan":    _CYAN_PALETTE,
+    "emerald": _EMERALD_PALETTE,
+    "amber":   _AMBER_PALETTE,
+    "violet":  _VIOLET_PALETTE,
+    "crimson": _CRIMSON_PALETTE,
+    "light":   _LIGHT_PALETTE,
 }
-_ACTIVE_THEME = "light"
+
+_THEME_NAMES = [
+    ("Cyber Monochrome (B&W)", "mono"),
+    ("Electric Cyan",          "cyan"),
+    ("Matrix Emerald",         "emerald"),
+    ("Solar Amber",            "amber"),
+    ("Hyper Violet",           "violet"),
+    ("Crimson Protocol",       "crimson"),
+    ("Classic Light",          "light"),
+]
+
+_ACTIVE_THEME = "mono"
 
 
 def _set_palette(theme: str) -> None:
     global _ACTIVE_THEME
-    theme = "dark" if theme == "dark" else "light"
-    palette = _DARK_PALETTE if theme == "dark" else _LIGHT_PALETTE
+    if theme not in _THEME_PALETTES:
+        theme = "mono"
+    palette = _THEME_PALETTES[theme]
     for name, value in palette.items():
         setattr(C, name, value)
     _ACTIVE_THEME = theme
@@ -673,7 +752,8 @@ class HudCanvas(QWidget):
                          int(cy - scaled.height() / 2), scaled)
         else:
             orb_r = int(fw * 0.27 * self._scale)
-            oc    = (210, 210, 210) if self.muted else (112, 112, 112)
+            base_col = QColor(C.MUTED_C if self.muted else C.PRI)
+            oc = (base_col.red(), base_col.green(), base_col.blue())
             for i in range(8, 0, -1):
                 r2  = int(orb_r * i / 8)
                 frc = i / 8
@@ -681,6 +761,9 @@ class HudCanvas(QWidget):
                 p.setBrush(QBrush(QColor(int(oc[0]*frc), int(oc[1]*frc), int(oc[2]*frc), a)))
                 p.setPen(Qt.PenStyle.NoPen)
                 p.drawEllipse(QRectF(cx - r2, cy - r2, r2 * 2, r2 * 2))
+            p.setPen(QPen(qcol(C.PRI, min(255, int(self._halo * 1.8))), 1.5))
+            p.setBrush(Qt.BrushStyle.NoBrush)
+            p.drawEllipse(QRectF(cx - orb_r * 0.42, cy - orb_r * 0.42, orb_r * 0.84, orb_r * 0.84))
             p.setPen(QPen(qcol(C.PRI, min(255, int(self._halo * 2))), 1))
             p.setFont(QFont(_MONO_FONT, 13, QFont.Weight.Bold))
             p.drawText(QRectF(cx - 80, cy - 14, 160, 28),
@@ -2579,6 +2662,48 @@ class RemoteKeyOverlay(QWidget):
         self._close_ui()
 
 
+class _SidebarResizeHandle(QFrame):
+    """Mouse drag handle used to resize the right activity sidebar."""
+
+    def __init__(self, on_resize, parent=None):
+        super().__init__(parent)
+        self._on_resize = on_resize
+        self._dragging = False
+        self.setObjectName("RightSidebarResizeHandle")
+        self.setFixedWidth(8)
+        self.setCursor(Qt.CursorShape.SplitHCursor)
+        self.setMouseTracking(True)
+        self.setToolTip("Drag to resize the activity sidebar")
+        self.setStyleSheet("""
+            QFrame#RightSidebarResizeHandle { background: transparent; border: none; }
+            QFrame#RightSidebarResizeHandle:hover { background: rgba(120, 120, 120, 45); }
+        """)
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton:
+            self._dragging = True
+            self.grabMouse()
+            event.accept()
+            return
+        super().mousePressEvent(event)
+
+    def mouseMoveEvent(self, event):
+        if self._dragging:
+            self._on_resize(event.globalPosition().toPoint().x(), False)
+            event.accept()
+            return
+        super().mouseMoveEvent(event)
+
+    def mouseReleaseEvent(self, event):
+        if self._dragging and event.button() == Qt.MouseButton.LeftButton:
+            self._dragging = False
+            self.releaseMouse()
+            self._on_resize(event.globalPosition().toPoint().x(), True)
+            event.accept()
+            return
+        super().mouseReleaseEvent(event)
+
+
 class MainWindow(QMainWindow):
     _log_sig        = pyqtSignal(str)
     _state_sig      = pyqtSignal(str)
@@ -2598,11 +2723,19 @@ class MainWindow(QMainWindow):
 
         # Load customization from config
         _cfg = _read_full_config()
-        _set_palette(_cfg.get("theme", "light"))
+        _init_theme = _cfg.get("theme", "mono")
+        if _init_theme == "dark":
+            _init_theme = "mono"
+        _set_palette(_init_theme)
         QApplication.instance().setPalette(self._app_palette(_ACTIVE_THEME))
         self._assistant_name: str = (_cfg.get("assistant_name") or "MAX").strip()
         self._show_left_sidebar = bool(_cfg.get("show_left_sidebar", True))
         self._show_right_sidebar = bool(_cfg.get("show_right_sidebar", True))
+        try:
+            _saved_right_width = int(_cfg.get("right_sidebar_width", _RIGHT_W))
+        except (TypeError, ValueError):
+            _saved_right_width = _RIGHT_W
+        self._right_sidebar_width = max(_RIGHT_MIN_W, min(_RIGHT_MAX_W, _saved_right_width))
         _display = self._assistant_name.upper()
 
         self.setWindowTitle(f"{_display} — {APP_VERSION}")
@@ -2616,6 +2749,8 @@ class MainWindow(QMainWindow):
         )
 
         self.on_text_command   = None
+        self._pending_text_commands: list[str] = []
+        self.on_mic_toggle     = None   # callable: (muted: bool) -> None
         self.on_remote_clicked = None   # callable: () -> (url, key) | None
         self.on_interrupt      = None   # callable: () -> None — stop MAX mid-speech
         self.on_voice_change   = None   # callable: () -> None — rebuild session with new voice
@@ -2623,10 +2758,12 @@ class MainWindow(QMainWindow):
         self._confirm_overlay  = None   # live ConfirmBanner, if one is on screen
         self.get_plugins       = None   # callable: () -> list[dict], set by MAXLive
         self.get_plugin_settings = None # callable: () -> list[dict] settings schemas, set by MAXLive
+        self.get_dashboard_snapshot = None
         self.on_wake_toggle    = None   # callable: (enable: bool) -> str, set by MAXLive
         self.on_wake_manual    = None   # callable: () -> None — manual sleep/wake
         self.wake_get_state    = None   # callable: () -> dict {enabled, awake, ready}
         self._muted            = False
+        self._camera_running   = False
         self._current_file: str | None = None
         self._remote_overlay: RemoteKeyOverlay | None = None
         self._customize_overlay: CustomizeOverlay | None = None
@@ -2695,6 +2832,9 @@ class MainWindow(QMainWindow):
         self._center_stack = QStackedWidget()
         self._center_stack.addWidget(self._hud_cam_stack)
         self._center_stack.addWidget(self._content_panel)
+        self._dashboard_page = self._build_dashboard()
+        self._center_stack.addWidget(self._dashboard_page)
+        self._center_stack.setCurrentWidget(self._dashboard_page)
 
         center_column = QWidget()
         center_column.setStyleSheet(f"background: {C.BG};")
@@ -2706,8 +2846,11 @@ class MainWindow(QMainWindow):
         body.addWidget(center_column, stretch=5)
 
         self._right_panel = self._build_right_panel()
+        self._right_panel_resize_handle = _SidebarResizeHandle(self._resize_right_sidebar)
+        body.addWidget(self._right_panel_resize_handle, stretch=0)
         body.addWidget(self._right_panel, stretch=0)
         self._right_panel.setVisible(self._show_right_sidebar)
+        self._right_panel_resize_handle.setVisible(self._show_right_sidebar)
 
         root.addLayout(body, stretch=1)
         root.addWidget(self._build_footer())
@@ -2753,6 +2896,7 @@ class MainWindow(QMainWindow):
         self._overlay: SetupOverlay | None = None
         self._ready = self._check_config()
         if not self._ready:
+            self._dashboard_status.setText("●  SETUP NEEDED")
             self._show_setup()
 
         sc_mute = QShortcut(QKeySequence("F4"), self)
@@ -2761,6 +2905,38 @@ class MainWindow(QMainWindow):
         sc_full.activated.connect(self._toggle_fullscreen)
         sc_intr = QShortcut(QKeySequence("Escape"), self)
         sc_intr.activated.connect(self._do_interrupt)
+        sc_focus = QShortcut(QKeySequence("Ctrl+K"), self)
+        sc_focus.activated.connect(self._focus_composer)
+        sc_controls = QShortcut(QKeySequence("Ctrl+Shift+O"), self)
+        sc_controls.activated.connect(self._toggle_options_shortcut)
+
+        self._daily_shortcut_keys: dict[str, QShortcut] = {}
+        for index, (shortcut_key, _label, _icon, _hint, _target) in enumerate(
+            self._daily_shortcut_specs(), start=1
+        ):
+            shortcut = QShortcut(QKeySequence(f"Ctrl+Alt+{index}"), self)
+            shortcut.setContext(Qt.ShortcutContext.WindowShortcut)
+            shortcut.setObjectName(f"hotkey_{shortcut_key}")
+            shortcut.activated.connect(
+                lambda key=shortcut_key: self._run_daily_shortcut(key)
+            )
+            self._daily_shortcut_keys[shortcut_key] = shortcut
+
+    def _focus_composer(self):
+        self._input.setFocus()
+
+    def _toggle_options_shortcut(self):
+        self._drawer_btn.click()
+
+    def _show_dashboard(self):
+        self._center_stack.setCurrentWidget(self._dashboard_page)
+        self._overview_nav_btn.setChecked(True)
+        self._core_nav_btn.setChecked(False)
+
+    def _show_live_core(self):
+        self._center_stack.setCurrentWidget(self._hud_cam_stack)
+        self._overview_nav_btn.setChecked(False)
+        self._core_nav_btn.setChecked(True)
 
     def _show_camera_frame(self, img_bytes: bytes):
         """Slot — display camera preview overlay (main thread)."""
@@ -2768,17 +2944,21 @@ class MainWindow(QMainWindow):
         cw = self.centralWidget()
         pw = _CameraPreview._W
         ph = self._cam_preview.height()
+        right_sidebar_width = self._right_sidebar_width if self._show_right_sidebar else 0
         self._cam_preview.setGeometry(
-            cw.width() - _RIGHT_W - pw - 12,
+            cw.width() - right_sidebar_width - pw - 12,
             cw.height() - ph - 28,
             pw, ph,
         )
 
     # --- Live camera stream in HUD area ------------------------------------
     def _on_cam_stream(self, start: bool) -> None:
+        self._camera_running = start
+        if hasattr(self, "_dashboard_camera_btn"):
+            self._dashboard_camera_btn.setText("Stop camera" if start else "Camera")
         if start:
             self._hud_cam_stack.setCurrentIndex(1)
-            self._center_stack.setCurrentWidget(self._hud_cam_stack)
+            self._show_live_core()
         else:
             self._hud_cam_stack.setCurrentIndex(0)
             self._cam_live_lbl.clear()
@@ -3216,8 +3396,9 @@ class MainWindow(QMainWindow):
         # Camera preview — bottom-right corner of the center/HUD area
         pw = _CameraPreview._W
         ph = self._cam_preview.height() or _CameraPreview._H
+        right_sidebar_width = self._right_sidebar_width if self._show_right_sidebar else 0
         self._cam_preview.setGeometry(
-            cw.width() - _RIGHT_W - pw - 12,
+            cw.width() - right_sidebar_width - pw - 12,
             cw.height() - ph - 28,
             pw, ph,
         )
@@ -3278,6 +3459,149 @@ class MainWindow(QMainWindow):
         except Exception:
             self._proc_lbl.setText("PROC  --")
 
+        self._update_dashboard_metrics(snap)
+
+    def _build_dashboard(self) -> QWidget:
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
+        scroll.setStyleSheet(f"QScrollArea {{ background: {C.BG}; border: none; }}")
+        page = QWidget()
+        page.setObjectName("DashboardPage")
+        page.setStyleSheet(f"QWidget#DashboardPage {{ background: {C.BG}; }}")
+        root = QVBoxLayout(page)
+        root.setContentsMargins(20, 18, 20, 16)
+        root.setSpacing(12)
+        head = QHBoxLayout()
+        title_col = QVBoxLayout()
+        title_col.setSpacing(3)
+        title = QLabel("Workspace overview")
+        title.setFont(QFont(_UI_FONT, 22, QFont.Weight.Bold))
+        title.setStyleSheet(f"color: {C.TEXT}; background: transparent;")
+        sub = QLabel("Your system, agent fleet, and controls in one place.")
+        sub.setFont(QFont(_UI_FONT, 10))
+        sub.setStyleSheet(f"color: {C.TEXT_DIM}; background: transparent;")
+        title_col.addWidget(title)
+        title_col.addWidget(sub)
+        head.addLayout(title_col)
+        head.addStretch()
+        self._dashboard_status = QLabel("●  STARTING")
+        self._dashboard_status.setFont(QFont(_UI_FONT, 10, QFont.Weight.Bold))
+        self._dashboard_status.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._dashboard_status.setMinimumHeight(34)
+        self._dashboard_status.setStyleSheet(f"color: {C.ACC}; background: {C.PANEL}; border: 1px solid {C.BORDER}; border-radius: 12px; padding: 0 12px;")
+        head.addWidget(self._dashboard_status)
+        root.addLayout(head)
+        self._dashboard_values, self._dashboard_bars = {}, {}
+        specs = (("cpu", "Processor", C.PRI), ("mem", "Memory", C.ACC), ("net", "Network", C.ACC2), ("agents", "Agent fleet", C.GREEN))
+        for start in (0, 2):
+            row = QHBoxLayout()
+            row.setSpacing(12)
+            for key, label, color in specs[start:start + 2]:
+                card = QFrame()
+                card.setMinimumHeight(86)
+                card.setStyleSheet(f"QFrame {{ background: {C.PANEL}; border: 1px solid {C.BORDER}; border-radius: 12px; }}")
+                col = QVBoxLayout(card)
+                col.setContentsMargins(14, 9, 14, 9)
+                col.setSpacing(2)
+                name = QLabel(label)
+                name.setFont(QFont(_UI_FONT, 9, QFont.Weight.DemiBold))
+                name.setStyleSheet(f"color: {C.TEXT_DIM}; background: transparent; border: none;")
+                value = QLabel("—")
+                value.setFont(QFont(_UI_FONT, 20, QFont.Weight.Bold))
+                value.setStyleSheet(f"color: {C.TEXT}; background: transparent; border: none;")
+                detail = QLabel("Waiting for system data")
+                detail.setFont(QFont(_UI_FONT, 8))
+                detail.setStyleSheet(f"color: {C.TEXT_DIM}; background: transparent; border: none;")
+                bar = QProgressBar()
+                bar.setRange(0, 100)
+                bar.setTextVisible(False)
+                bar.setFixedHeight(6)
+                bar.setStyleSheet(f"QProgressBar {{ background: {C.BAR_BG}; border: none; border-radius: 3px; }} QProgressBar::chunk {{ background: {color}; border-radius: 3px; }}")
+                col.addWidget(name)
+                col.addWidget(value)
+                col.addWidget(detail)
+                col.addWidget(bar)
+                row.addWidget(card, 1)
+                self._dashboard_values[key] = (value, detail)
+                self._dashboard_bars[key] = bar
+            root.addLayout(row)
+        actions_panel = QFrame()
+        actions_panel.setStyleSheet(f"QFrame {{ background: {C.PANEL}; border: 1px solid {C.BORDER}; border-radius: 12px; }}")
+        action_col = QVBoxLayout(actions_panel)
+        action_col.setContentsMargins(14, 10, 14, 11)
+        action_col.setSpacing(7)
+        action_title = QLabel("Quick actions")
+        action_title.setFont(QFont(_UI_FONT, 11, QFont.Weight.Bold))
+        action_title.setStyleSheet(f"color: {C.TEXT}; background: transparent; border: none;")
+        action_col.addWidget(action_title)
+        action_row = QHBoxLayout()
+        action_row.setSpacing(8)
+        action_specs = (("Message · Ctrl+K", self._focus_composer, True), ("Mic · F4", self._toggle_mute, False), ("Camera", self._toggle_camera_dashboard, False), ("Controls", self._toggle_options_shortcut, False))
+        for label, callback, primary in action_specs:
+            button = QPushButton(label)
+            if label == "Camera": self._dashboard_camera_btn = button
+            button.setCursor(Qt.CursorShape.PointingHandCursor)
+            button.setMinimumHeight(38)
+            button.setFont(QFont(_UI_FONT, 9, QFont.Weight.DemiBold))
+            primary_text = C.WHITE if _ACTIVE_THEME == "light" else C.BG
+            bg, fg = (C.PRI, primary_text) if primary else (C.PANEL2, C.TEXT_MED)
+            border = C.PRI if primary else C.BORDER
+            button.setStyleSheet(f"QPushButton {{ color: {fg}; background: {bg}; border: 1px solid {border}; border-radius: 9px; padding: 0 8px; }} QPushButton:hover {{ background: {C.PRI_GHO}; color: {C.PRI}; }}")
+            button.clicked.connect(callback)
+            action_row.addWidget(button, 1)
+        action_col.addLayout(action_row)
+        root.addWidget(actions_panel)
+        details = QHBoxLayout()
+        details.setSpacing(12)
+        for title_text, attr, value_text in (("Runtime", "_dashboard_runtime", "OS · Loading"), ("Agent & task queue", "_dashboard_queue", "Agent registry · Connecting")):
+            card = QFrame()
+            card.setStyleSheet(f"QFrame {{ background: {C.PANEL}; border: 1px solid {C.BORDER}; border-radius: 12px; }}")
+            col = QVBoxLayout(card)
+            col.setContentsMargins(14, 10, 14, 10)
+            col.setSpacing(5)
+            heading = QLabel(title_text)
+            heading.setFont(QFont(_UI_FONT, 11, QFont.Weight.Bold))
+            heading.setStyleSheet(f"color: {C.TEXT}; background: transparent; border: none;")
+            value = QLabel(value_text)
+            value.setFont(QFont(_UI_FONT, 9))
+            value.setStyleSheet(f"color: {C.TEXT_MED}; background: transparent; border: none;")
+            col.addWidget(heading)
+            col.addWidget(value)
+            details.addWidget(card, 1)
+            setattr(self, attr, value)
+        root.addLayout(details)
+        root.addStretch(1)
+        scroll.setWidget(page)
+        return scroll
+
+    def _update_dashboard_metrics(self, snap: dict):
+        cpu, mem, net = snap["cpu"], snap["mem"], snap["net"]
+        metrics = (("cpu", f"{cpu:.0f}%", "Processor load", cpu), ("mem", f"{mem:.0f}%", "Memory in use", mem), ("net", f"{net*1024:.0f} KB/s" if net < 1 else f"{net:.1f} MB/s", "Current throughput", min(100, net*10)))
+        for key, value, detail, pct in metrics:
+            self._dashboard_values[key][0].setText(value)
+            self._dashboard_values[key][1].setText(detail)
+            self._dashboard_bars[key].setValue(int(pct))
+        data = {}
+        if self.get_dashboard_snapshot:
+            try: data = self.get_dashboard_snapshot() or {}
+            except Exception: data = {}
+        count, queued = data.get("agents"), data.get("queued")
+        capacity = data.get("capacity", 500)
+        self._dashboard_values["agents"][0].setText(str(count) if count is not None else "—")
+        self._dashboard_values["agents"][1].setText("Registered agents" if count is not None else "Agent runtime connecting")
+        self._dashboard_bars["agents"].setValue(int(min(100, (count or 0) / 33 * 100)))
+        agent_line = f"Agent registry · {count} ready" if count is not None else "Agent registry · Connecting"
+        self._dashboard_queue.setText(agent_line + chr(10) + f"Queued tasks · {queued if queued is not None else '—'} / {capacity}")
+        os_name = {"Windows": "Windows", "Darwin": "macOS", "Linux": "Linux"}.get(_OS, _OS)
+        self._dashboard_runtime.setText(f"OS · {os_name}" + chr(10) + f"Uptime · {self._uptime_lbl.text().replace('UP  ', '')}" + chr(10) + f"Processes · {self._proc_lbl.text().replace('PROC  ', '')}")
+
+    def _toggle_camera_dashboard(self):
+        if self._camera_running:
+            self.stop_camera_stream()
+        else:
+            self._show_live_core()
+            self.start_camera_stream()
 
     def _build_header(self) -> QWidget:
         w = QWidget()
@@ -3288,7 +3612,7 @@ class MainWindow(QMainWindow):
 
         def _badge(txt, color=C.TEXT_MED):
             l = QLabel(txt)
-            l.setFont(QFont(_UI_FONT, 8))
+            l.setFont(QFont(_UI_FONT, 8, QFont.Weight.Bold))
             l.setStyleSheet(f"color: {color}; background: transparent;")
             return l
 
@@ -3299,6 +3623,22 @@ class MainWindow(QMainWindow):
         )
         lay.addWidget(self._left_sidebar_btn)
         lay.addWidget(_badge(APP_VERSION, C.PRI_DIM))
+        lay.addWidget(_badge("• SECURE_OPS", C.GREEN))
+        lay.addWidget(_badge("• 99.4% STABLE", C.TEXT_DIM))
+        lay.addSpacing(12)
+        self._overview_nav_btn = QPushButton("Overview")
+        self._overview_nav_btn.setCheckable(True)
+        self._overview_nav_btn.setChecked(True)
+        self._core_nav_btn = QPushButton("Live core")
+        self._core_nav_btn.setCheckable(True)
+        self._overview_nav_btn.clicked.connect(self._show_dashboard)
+        self._core_nav_btn.clicked.connect(self._show_live_core)
+        for nav_btn in (self._overview_nav_btn, self._core_nav_btn):
+            nav_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+            nav_btn.setMinimumHeight(34)
+            nav_btn.setFont(QFont(_UI_FONT, 9, QFont.Weight.DemiBold))
+            nav_btn.setStyleSheet(f"QPushButton {{ color: {C.TEXT_MED}; background: transparent; border: none; border-radius: 8px; padding: 0 10px; }} QPushButton:hover {{ color: {C.PRI}; background: {C.PANEL2}; }} QPushButton:checked {{ color: {C.PRI}; background: {C.PRI_GHO}; border: 1px solid {C.BORDER}; }}")
+            lay.addWidget(nav_btn)
         lay.addSpacing(8)
         lay.addStretch()
 
@@ -3319,6 +3659,32 @@ class MainWindow(QMainWindow):
         mid.addWidget(self._sub_lbl)
         lay.addLayout(mid)
         lay.addStretch()
+
+        # Quick Theme Selector in Header
+        self._header_theme_box = QComboBox()
+        self._header_theme_box.setFixedSize(168, 30)
+        self._header_theme_box.setFont(QFont(_UI_FONT, 8, QFont.Weight.DemiBold))
+        self._header_theme_box.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._header_theme_box.setToolTip("Select UI Color Theme")
+        for title, key in _THEME_NAMES:
+            self._header_theme_box.addItem(f" {title}", key)
+        self._header_theme_box.setStyleSheet(f"""
+            QComboBox {{ background: {C.PANEL2}; color: {C.TEXT};
+                border: 1px solid {C.BORDER}; border-radius: 8px; padding: 2px 6px; }}
+            QComboBox:hover {{ border-color: {C.BORDER_B}; color: {C.PRI}; }}
+            QComboBox QAbstractItemView {{ background: {C.PANEL}; color: {C.TEXT};
+                selection-background-color: {C.PRI_GHO}; selection-color: {C.PRI};
+                border: 1px solid {C.BORDER}; }}
+        """)
+        for i in range(self._header_theme_box.count()):
+            if self._header_theme_box.itemData(i) == _ACTIVE_THEME:
+                self._header_theme_box.setCurrentIndex(i)
+                break
+        self._header_theme_box.currentIndexChanged.connect(
+            lambda _idx: self._apply_theme(self._header_theme_box.currentData())
+        )
+        lay.addWidget(self._header_theme_box)
+        lay.addSpacing(6)
 
         right_col = QVBoxLayout(); right_col.setSpacing(2)
         self._clock_lbl = QLabel("00:00:00")
@@ -3365,6 +3731,7 @@ class MainWindow(QMainWindow):
         else:
             self._show_right_sidebar = visible
             self._right_panel.setVisible(visible)
+            self._right_panel_resize_handle.setVisible(visible)
             key = "show_right_sidebar"
         self._save_ui_preference(key, visible)
         if hasattr(self, "_quick_drawer") and self._quick_drawer.isVisible():
@@ -3380,9 +3747,88 @@ class MainWindow(QMainWindow):
         except Exception:
             pass
 
+    def _resize_right_sidebar(self, global_x: int, finished: bool = False):
+        """Resize the right activity sidebar from the mouse's global X position."""
+        central = self.centralWidget()
+        right_edge = central.mapToGlobal(QPoint(central.width(), 0)).x()
+        left_width = self._left_panel.width() if self._show_left_sidebar else 0
+        available_max = central.width() - left_width - self._right_panel_resize_handle.width() - _CENTER_MIN_W
+        max_width = max(_RIGHT_MIN_W, min(_RIGHT_MAX_W, available_max))
+        width = max(_RIGHT_MIN_W, min(max_width, right_edge - global_x))
+        if width == self._right_sidebar_width:
+            return
+        self._right_sidebar_width = width
+        self._right_panel.setFixedWidth(width)
+        if finished:
+            self._save_ui_preference("right_sidebar_width", width)
+        if hasattr(self, "_quick_drawer") and self._quick_drawer.isVisible():
+            self._position_quick_drawer()
+
     def _tick_clock(self):
         self._clock_lbl.setText(time.strftime("%H:%M:%S"))
         self._date_lbl.setText(time.strftime("%a %d %b %Y"))
+
+    @staticmethod
+    def _daily_shortcut_specs():
+        return (
+            ("camera", "Camera", "C", "Toggle MAX camera preview", None),
+            ("calculator", "Calculator", "=", "Open the system calculator", "calculator"),
+            ("jiosaavn", "JioSaavn", "S", "Open JioSaavn in your browser", "https://www.jiosaavn.com/"),
+            ("calendar", "Calendar", "D", "Open Google Calendar in your browser", "https://calendar.google.com/"),
+            ("files", "Files", "F", "Open your home folder", "files"),
+            ("notes", "Notes", "N", "Open the system text editor", "notes"),
+        )
+
+    def _run_daily_shortcut(self, key: str):
+        if key == "camera":
+            self._toggle_camera_dashboard()
+            return
+
+        spec = next((item for item in self._daily_shortcut_specs() if item[0] == key), None)
+        if spec is None:
+            self._log.append_log(f"ERR: Unknown daily shortcut: {key}")
+            return
+
+        _key, label, _icon, _hint, target = spec
+        try:
+            if target in ("https://www.jiosaavn.com/", "https://calendar.google.com/"):
+                opened = QDesktopServices.openUrl(QUrl(target))
+                if not opened:
+                    raise RuntimeError("the default browser rejected the request")
+                self._log.append_log(f"SYS: Open request sent for {label}.")
+                return
+
+            if target == "files":
+                opened = QDesktopServices.openUrl(QUrl.fromLocalFile(str(Path.home())))
+                if not opened:
+                    raise RuntimeError("the system file manager rejected the request")
+                self._log.append_log("SYS: Open request sent for your home folder.")
+                return
+
+            if target == "calculator":
+                if _OS == "Windows":
+                    program, args = "calc.exe", []
+                elif _OS == "Darwin":
+                    program, args = "open", ["-a", "Calculator"]
+                else:
+                    program, args = "gnome-calculator", []
+            elif target == "notes":
+                if _OS == "Windows":
+                    program, args = "notepad.exe", []
+                elif _OS == "Darwin":
+                    program, args = "open", ["-a", "TextEdit"]
+                else:
+                    program, args = "gedit", []
+            else:
+                self._log.append_log(f"ERR: No launcher is configured for {label}.")
+                return
+
+            started, _pid = QProcess.startDetached(program, args)
+            if not started:
+                raise RuntimeError(f"could not start {program}")
+            self._log.append_log(f"SYS: Launch request sent for {label}.")
+        except Exception as exc:
+            self._log.append_log(f"ERR: Could not open {label}: {exc}")
 
     def _build_left_panel(self) -> QWidget:
         w = QWidget()
@@ -3412,6 +3858,7 @@ class MainWindow(QMainWindow):
         lay.addSpacing(4)
 
         info_panel = QWidget()
+        info_panel.setMinimumHeight(48)
         info_panel.setStyleSheet(
             f"background: {C.PANEL2}; border: 1px solid {C.BORDER}; border-radius: 8px;"
         )
@@ -3436,8 +3883,55 @@ class MainWindow(QMainWindow):
         ip_lay.addWidget(os_lbl)
 
         lay.addWidget(info_panel)
-        lay.addSpacing(4)
+        lay.addSpacing(6)
 
+        quick_hdr = QLabel("DAILY SHORTCUTS")
+        quick_hdr.setFont(QFont(_UI_FONT, 8, QFont.Weight.Bold))
+        quick_hdr.setStyleSheet(
+            f"color: {C.TEXT_MED}; background: transparent; "
+            f"border-bottom: 1px solid {C.BORDER}; padding-bottom: 4px;"
+        )
+        lay.addWidget(quick_hdr)
+
+        self._daily_shortcut_buttons: dict[str, QPushButton] = {}
+        for index, (key, label, icon, hint, _target) in enumerate(self._daily_shortcut_specs(), start=1):
+            button = QPushButton(f"[{icon}]  {label}")
+            button.setObjectName(f"shortcut_{key}")
+            button.setAccessibleName(f"Open {label}")
+            button.setToolTip(f"{hint}  •  Ctrl+Alt+{index}")
+            button.setCursor(Qt.CursorShape.PointingHandCursor)
+            button.setFixedHeight(29)
+            button.setFont(QFont(_UI_FONT, 9, QFont.Weight.DemiBold))
+            button.setStyleSheet(f"""
+                QPushButton {{
+                    color: {C.TEXT};
+                    background: {C.PANEL2};
+                    border: 1px solid {C.BORDER};
+                    border-radius: 7px;
+                    text-align: left;
+                    padding: 0 8px;
+                }}
+                QPushButton:hover {{
+                    color: {C.PRI};
+                    background: {C.PRI_GHO};
+                    border-color: {C.PRI_DIM};
+                }}
+                QPushButton:pressed {{
+                    background: {C.PANEL};
+                    border-color: {C.PRI};
+                }}
+                QPushButton:focus {{
+                    border: 1px solid {C.PRI};
+                }}
+            """)
+            button.clicked.connect(
+                lambda _checked=False, shortcut_key=key:
+                    self._run_daily_shortcut(shortcut_key)
+            )
+            self._daily_shortcut_buttons[key] = button
+            lay.addWidget(button)
+
+        lay.addSpacing(2)
         lay.addStretch()
 
         for txt, col in [
@@ -3457,7 +3951,7 @@ class MainWindow(QMainWindow):
         return w
     def _build_right_panel(self) -> QWidget:
         w = QWidget()
-        w.setFixedWidth(_RIGHT_W)
+        w.setFixedWidth(self._right_sidebar_width)
         w.setStyleSheet(f"background: {C.DARK}; border-left: 1px solid {C.BORDER};")
         lay = QVBoxLayout(w)
         lay.setContentsMargins(8, 8, 8, 8)
@@ -3471,6 +3965,7 @@ class MainWindow(QMainWindow):
 
         lay.addWidget(_sec("ACTIVITY LOG"))
         self._log = LogWidget()
+        self._log.setPlaceholderText("System and session events will appear here.")
         lay.addWidget(self._log, stretch=1)
 
         return w
@@ -3621,18 +4116,22 @@ class MainWindow(QMainWindow):
         theme_row.addWidget(theme_label)
         theme_row.addStretch(1)
         self._theme_box = QComboBox()
-        self._theme_box.addItem("Light", "light")
-        self._theme_box.addItem("Dark", "dark")
-        self._theme_box.setFixedSize(104, 30)
-        self._theme_box.setFont(QFont(_UI_FONT, 9))
+        self._theme_box.setFixedSize(150, 30)
+        self._theme_box.setFont(QFont(_UI_FONT, 8, QFont.Weight.DemiBold))
+        for title, key in _THEME_NAMES:
+            self._theme_box.addItem(title, key)
         self._theme_box.setStyleSheet(f"""
             QComboBox {{ background: {C.PANEL}; color: {C.TEXT};
                 border: 1px solid {C.BORDER}; border-radius: 8px; padding: 3px 8px; }}
-            QComboBox:hover {{ border-color: {C.BORDER_B}; }}
+            QComboBox:hover {{ border-color: {C.BORDER_B}; color: {C.PRI}; }}
             QComboBox QAbstractItemView {{ background: {C.PANEL}; color: {C.TEXT};
-                selection-background-color: {C.PRI_GHO}; border: 1px solid {C.BORDER}; }}
+                selection-background-color: {C.PRI_GHO}; selection-color: {C.PRI};
+                border: 1px solid {C.BORDER}; }}
         """)
-        self._theme_box.setCurrentIndex(1 if _ACTIVE_THEME == "dark" else 0)
+        for i in range(self._theme_box.count()):
+            if self._theme_box.itemData(i) == _ACTIVE_THEME:
+                self._theme_box.setCurrentIndex(i)
+                break
         self._theme_box.currentIndexChanged.connect(
             lambda _index: self._apply_theme(self._theme_box.currentData())
         )
@@ -3654,7 +4153,7 @@ class MainWindow(QMainWindow):
     def _position_quick_drawer(self):
         if not hasattr(self, '_quick_drawer'):
             return
-        _W = 220
+        _W = 250
         self._quick_drawer.setFixedWidth(_W)
         self._quick_drawer.adjustSize()
         _h = self._quick_drawer.sizeHint().height()
@@ -3665,34 +4164,16 @@ class MainWindow(QMainWindow):
         self._quick_drawer.setGeometry(_x, _y, _W, _h)
 
     def _apply_theme(self, theme: str):
-        theme = "dark" if theme == "dark" else "light"
+        if not theme or theme not in _THEME_PALETTES:
+            theme = "mono"
         if theme == _ACTIVE_THEME:
             return
-        light_to_dark = {
-            **{value: _DARK_PALETTE[key] for key, value in _LIGHT_PALETTE.items()},
-            "#ffffff": "#111111",
-            "#f4f4f4": "#191919", "#dedede": "#252525",
-            "#171717": "#f4f4f4", "#222222": "#303030",
-            "#737373": "#858585", "#333333": "#b0b0b0",
-            "#d5d5d5": "#454545", "#e7e7e7": "#303030",
-            "#9b9b9b": "#777777", "#bdbdbd": "#777777",
-            "#565656": "#c8c8c8", "#c7c7c7": "#555555",
-            "#e4e4e4": "#202020", "#d8d8d8": "#303030",
-            "#f3f3f3": "#191919", "#454545": "#454545",
-        }
-        dark_to_light = {
-            **{value: _LIGHT_PALETTE[key] for key, value in _DARK_PALETTE.items()},
-            "#ffffff": "#ffffff",
-            "#191919": "#f4f4f4", "#252525": "#ededed",
-            "#f4f4f4": "#f4f4f4", "#303030": "#e7e7e7",
-            "#858585": "#737373", "#b0b0b0": "#333333",
-            "#777777": "#9b9b9b", "#c8c8c8": "#565656",
-            "#202020": "#e4e4e4", "#454545": "#d5d5d5",
-        }
-        replacements = light_to_dark if theme == "dark" else dark_to_light
-        # Replace color tokens in one pass so a newly inserted color cannot be
-        # translated a second time in the same stylesheet.
-        token_map = {key.lower(): value for key, value in replacements.items()}
+
+        old_pal = _THEME_PALETTES.get(_ACTIVE_THEME, _MONO_PALETTE)
+        new_pal = _THEME_PALETTES[theme]
+
+        token_map = {old_pal[k].lower(): new_pal[k] for k in old_pal}
+
         _set_palette(theme)
         self.centralWidget().setStyleSheet(f"background: {C.BG};")
         for widget in self.centralWidget().findChildren(QWidget):
@@ -3710,29 +4191,51 @@ class MainWindow(QMainWindow):
         ):
             bar._color = color
             bar.update()
+
         palette = self._app_palette(theme)
         QApplication.instance().setPalette(palette)
+
+        if hasattr(self, '_theme_box') and self._theme_box:
+            self._theme_box.blockSignals(True)
+            for i in range(self._theme_box.count()):
+                if self._theme_box.itemData(i) == theme:
+                    self._theme_box.setCurrentIndex(i)
+                    break
+            self._theme_box.blockSignals(False)
+
+        if hasattr(self, '_header_theme_box') and self._header_theme_box:
+            self._header_theme_box.blockSignals(True)
+            for i in range(self._header_theme_box.count()):
+                if self._header_theme_box.itemData(i) == theme:
+                    self._header_theme_box.setCurrentIndex(i)
+                    break
+            self._header_theme_box.blockSignals(False)
+
+        if hasattr(self, 'hud') and self.hud:
+            self.hud.update()
+
         self._save_ui_preference("theme", theme)
-        self._log.append_log(f"UI: {theme.title()} theme selected.")
+        self._log.append_log(f"UI: {theme.upper()} theme activated.")
         self._position_quick_drawer()
 
     @staticmethod
     def _app_palette(theme: str) -> QPalette:
-        dark = theme == "dark"
+        pal = _THEME_PALETTES.get(theme, _MONO_PALETTE)
         palette = QPalette()
-        window = QColor("#0d0d0d" if dark else "#ffffff")
-        base = QColor("#111111" if dark else "#ffffff")
-        text = QColor("#f2f2f2" if dark else "#111111")
-        muted = QColor("#a7a7a7" if dark else "#555555")
+        window = QColor(pal["BG"])
+        panel = QColor(pal["PANEL"])
+        text = QColor(pal["TEXT"])
+        muted = QColor(pal["TEXT_DIM"])
+        pri = QColor(pal["PRI"])
         palette.setColor(QPalette.ColorRole.Window, window)
-        palette.setColor(QPalette.ColorRole.Base, base)
-        palette.setColor(QPalette.ColorRole.AlternateBase, QColor("#191919" if dark else "#f2f2f2"))
+        palette.setColor(QPalette.ColorRole.Base, panel)
+        palette.setColor(QPalette.ColorRole.AlternateBase, QColor(pal["PANEL2"]))
         palette.setColor(QPalette.ColorRole.Text, text)
         palette.setColor(QPalette.ColorRole.WindowText, text)
-        palette.setColor(QPalette.ColorRole.Button, QColor("#191919" if dark else "#f2f2f2"))
+        palette.setColor(QPalette.ColorRole.Button, panel)
         palette.setColor(QPalette.ColorRole.ButtonText, text)
-        palette.setColor(QPalette.ColorRole.Highlight, QColor("#555555" if dark else "#dedede"))
-        palette.setColor(QPalette.ColorRole.HighlightedText, text)
+        palette.setColor(QPalette.ColorRole.Highlight, pri)
+        palette.setColor(QPalette.ColorRole.HighlightedText, window)
         palette.setColor(QPalette.ColorRole.PlaceholderText, muted)
         return palette
 
@@ -3746,10 +4249,43 @@ class MainWindow(QMainWindow):
             }}
         """)
         outer = QVBoxLayout(surface)
-        outer.setContentsMargins(14, 10, 14, 10)
-        outer.setSpacing(7)
+        outer.setContentsMargins(14, 8, 14, 10)
+        outer.setSpacing(6)
+
+        # Quick Action Ops Chips
+        chip_row = QHBoxLayout()
+        chip_row.setSpacing(6)
+        chip_lbl = QLabel("QUICK OPS:")
+        chip_lbl.setFont(QFont(_UI_FONT, 7, QFont.Weight.Bold))
+        chip_lbl.setStyleSheet(f"color: {C.TEXT_DIM}; background: transparent;")
+        chip_row.addWidget(chip_lbl)
+        for label, prompt in [
+            ("Verify Encryption", "Verify encryption status and node security."),
+            ("Diagnostic Cluster", "Run diagnostic cluster check on system health and memory."),
+            ("Backup Beta", "Check backup routines and persistent storage status."),
+            ("Calibrate Weights", "Calibrate model weights and response latency."),
+        ]:
+            btn = QPushButton(label)
+            btn.setFont(QFont(_UI_FONT, 8))
+            btn.setCursor(Qt.CursorShape.PointingHandCursor)
+            btn.setStyleSheet(f"""
+                QPushButton {{
+                    background: {C.PANEL}; color: {C.TEXT_MED};
+                    border: 1px solid {C.BORDER}; border-radius: 6px;
+                    padding: 2px 7px;
+                }}
+                QPushButton:hover {{
+                    background: {C.PRI_GHO}; color: {C.PRI}; border-color: {C.BORDER_B};
+                }}
+            """)
+            btn.clicked.connect(lambda _, p=prompt: self._send_quick_prompt(p))
+            chip_row.addWidget(btn)
+        chip_row.addStretch()
+        outer.addLayout(chip_row)
+
         self._input = QLineEdit()
         self._input.setPlaceholderText("Message MAX…")
+        self._input.setToolTip("Type a message or press Ctrl+K to focus this field")
         self._input.setFont(QFont(_UI_FONT, 11))
         self._input.setMinimumHeight(32)
         self._input.setStyleSheet(f"""
@@ -3775,12 +4311,12 @@ class MainWindow(QMainWindow):
         self._file_hint.setMinimumWidth(74)
         row.addWidget(self._file_hint, stretch=1)
 
-        self._drawer_btn = self._composer_button("•••", "Options & controls")
+        self._drawer_btn = self._composer_button("•••", "Options & controls (Ctrl+Shift+O)")
         self._drawer_btn.setCheckable(True)
         self._drawer_btn.clicked.connect(self._toggle_drawer)
         row.addWidget(self._drawer_btn)
 
-        self._mute_btn = self._composer_button("MIC", "Toggle microphone")
+        self._mute_btn = self._composer_button("MIC", "Toggle microphone (F4)")
         self._mute_btn.setFixedSize(42, 32)
         self._mute_btn.setCheckable(True)
         self._mute_btn.clicked.connect(self._toggle_mute)
@@ -3926,10 +4462,12 @@ class MainWindow(QMainWindow):
             self._content_display.textCursor().MoveOperation.Start
         )
         self._center_stack.setCurrentWidget(self._content_panel)
+        self._overview_nav_btn.setChecked(False)
+        self._core_nav_btn.setChecked(True)
 
     def _dismiss_content(self):
         """Return the center area to the HUD or currently selected camera view."""
-        self._center_stack.setCurrentWidget(self._hud_cam_stack)
+        self._show_live_core()
 
     def _build_footer(self) -> QWidget:
         w = QWidget()
@@ -3942,7 +4480,7 @@ class MainWindow(QMainWindow):
             l.setStyleSheet(f"color: {color}; background: transparent;")
             return l
 
-        lay.addWidget(_fl("Enter  Send   ·   +  Attach   ·   Esc  Stop   ·   F11  Fullscreen"))
+        lay.addWidget(_fl("Ctrl+K  Message   ·   Ctrl+Shift+O  Controls   ·   F4  Mic   ·   Esc  Stop   ·   F11  Fullscreen"))
         lay.addStretch()
         lay.addWidget(_fl("By CyberBlack-Edition", C.PRI_DIM))
         return w
@@ -4423,6 +4961,12 @@ class MainWindow(QMainWindow):
         else:
             self._apply_state("LISTENING")
             self._log.append_log("SYS: Microphone active.")
+        cb = getattr(self, "on_mic_toggle", None)
+        if cb:
+            try:
+                cb(self._muted)
+            except Exception:
+                pass
 
     def _style_mute_btn(self):
         if self._muted:
@@ -4449,12 +4993,26 @@ class MainWindow(QMainWindow):
         if not txt: return
         self._input.clear()
         self._log.append_log(f"You: {txt}")
-        if self.on_text_command:
-            threading.Thread(target=self.on_text_command, args=(txt,), daemon=True).start()
+        cb = getattr(self, "on_text_command", None)
+        if cb:
+            threading.Thread(target=cb, args=(txt,), daemon=True).start()
+        else:
+            self._pending_text_commands.append(txt)
+            self._log.append_log("SYS: Connecting to MAX... command queued.")
+
+    def _send_quick_prompt(self, text: str):
+        if not text:
+            return
+        self._input.setText(text)
+        self._send()
 
     def _apply_state(self, state: str):
         self.hud.state    = state
         self.hud.speaking = (state == "SPEAKING")
+        if hasattr(self, "_dashboard_status"):
+            color = C.RED if state == "ERROR" else C.TEXT_DIM if state == "MUTED" else C.GREEN if state in ("LISTENING", "SPEAKING") else C.ACC
+            self._dashboard_status.setText(f"●  {state.replace('_', ' ')}")
+            self._dashboard_status.setStyleSheet(f"color: {color}; background: {C.PANEL}; border: 1px solid {C.BORDER}; border-radius: 12px; padding: 0 12px;")
 
     def _check_config(self) -> bool:
         if not API_FILE.exists(): return False
@@ -4533,6 +5091,18 @@ class MAXUI:
     @on_text_command.setter
     def on_text_command(self, cb):
         self._win.on_text_command = cb
+        if cb and hasattr(self._win, "_pending_text_commands"):
+            while self._win._pending_text_commands:
+                cmd = self._win._pending_text_commands.pop(0)
+                threading.Thread(target=cb, args=(cmd,), daemon=True).start()
+
+    @property
+    def on_mic_toggle(self):
+        return self._win.on_mic_toggle
+
+    @on_mic_toggle.setter
+    def on_mic_toggle(self, cb):
+        self._win.on_mic_toggle = cb
 
     @property
     def on_remote_clicked(self):
@@ -4590,6 +5160,14 @@ class MAXUI:
     @get_plugin_settings.setter
     def get_plugin_settings(self, cb):
         self._win.get_plugin_settings = cb
+
+    @property
+    def get_dashboard_snapshot(self):
+        return self._win.get_dashboard_snapshot
+
+    @get_dashboard_snapshot.setter
+    def get_dashboard_snapshot(self, cb):
+        self._win.get_dashboard_snapshot = cb
 
     @property
     def on_wake_toggle(self):
@@ -4668,4 +5246,12 @@ class MAXUI:
     def stop_speaking(self):
         if not self.muted:
             self.set_state("LISTENING")
+
+
+if __name__ == "__main__":
+    _face = BASE_DIR / "face.png"
+    if not _face.exists():
+        _face = Path(__file__).resolve().parent / "face.png"
+    app_ui = MAXUI(str(_face))
+    sys.exit(app_ui._app.exec())
 

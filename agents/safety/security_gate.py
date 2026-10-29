@@ -1,8 +1,7 @@
-"""Agent 26: Security Gate Agent.
+"""Agent 26: Security Gate.
 
-Enforces static and behavioral risk classification across all incoming requests.
-Delegates to ReflexGuardrails to categorize actions into Tier 0/1/2/3.
-Operates at Permission Tier 3 (Guard evaluator).
+Enforces system security policy across T0–T3 permission tiers.
+Blocks dangerous operations, irreversible disk formats, and unchoked side-effects.
 """
 
 from __future__ import annotations
@@ -17,13 +16,29 @@ logger = logging.getLogger("max.agents.security_gate")
 
 class SecurityGate(BaseAgent):
     name = "SecurityGate"
-    description = "Evaluates instructions against 4-tier security guardrails and detects blocked actions."
-    permission_tier = 3  # Hard Block evaluator
-
-    def __init__(self, guardrails: ReflexGuardrails | None = None, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
-        self.guardrails = guardrails or ReflexGuardrails(fallback_mode=True)
+    description = "Enforces permission tiers (T0-T3) and blocks dangerous operations without confirmation."
+    permission_tier = 0
 
     def _execute(self, input_data: AgentInput) -> AgentOutput:
-        """Not yet implemented (Rule 1-H1 Honesty)."""
-        raise NotImplementedError(f"Agent '{self.name}' is not implemented")
+        command = input_data.task_description or "Check system safety"
+        logger.info("SecurityGate evaluating command safety: %s", command)
+
+        guardrails = ReflexGuardrails(fallback_mode=True)
+        decision = guardrails.check_safety(command)
+
+        tier_name = f"Tier {decision.risk_tier.value}"
+        is_blocked = (decision.risk_tier == RiskTier.TIER_3_HARD_BLOCKED)
+        requires_approval = (decision.risk_tier == RiskTier.TIER_2_CONFIRM_ON_WRITE)
+
+        if is_blocked:
+            return AgentOutput(
+                success=False,
+                error=f"Hard-blocked by SecurityGate: {decision.reason} ({tier_name})",
+                artifacts={"tier": tier_name, "blocked": True},
+            )
+
+        return AgentOutput(
+            success=True,
+            result=f"SecurityGate evaluated: {tier_name} ({'Requires Confirmation' if requires_approval else 'Allowed'}).",
+            artifacts={"tier": tier_name, "requires_approval": requires_approval, "reason": decision.reason},
+        )

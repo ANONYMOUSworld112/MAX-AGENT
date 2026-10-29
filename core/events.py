@@ -223,6 +223,8 @@ class AuditWriter:
 
             return envelope
 
+    record = write
+
     def verify_chain(self) -> bool:
         """
         Verify the integrity of the entire audit chain.
@@ -268,3 +270,105 @@ class AuditWriter:
         """The hash of the most recent event (or genesis hash if empty)."""
         with self._lock:
             return self._prev_hash
+
+
+# ---------------------------------------------------------------------------
+# Typed Event Factory Helpers
+# ---------------------------------------------------------------------------
+
+def create_user_message_event(content: str, correlation_id: str = "", actor: str = "user") -> EventEnvelope:
+    return EventEnvelope(
+        event_type="user_message",
+        correlation_id=correlation_id,
+        actor=actor,
+        payload={"content": content},
+    )
+
+
+def create_assistant_chunk_event(chunk: str, correlation_id: str = "", actor: str = "assistant") -> EventEnvelope:
+    return EventEnvelope(
+        event_type="assistant_chunk",
+        correlation_id=correlation_id,
+        actor=actor,
+        payload={"chunk": chunk},
+    )
+
+
+def create_tool_call_event(tool_name: str, tool_input: dict[str, Any], correlation_id: str = "", actor: str = "assistant") -> EventEnvelope:
+    return EventEnvelope(
+        event_type="tool_call",
+        correlation_id=correlation_id,
+        actor=actor,
+        payload={"tool_name": tool_name, "input": tool_input},
+    )
+
+
+def create_tool_result_event(tool_name: str, output: Any, status: str = "success", correlation_id: str = "", actor: str = "system") -> EventEnvelope:
+    return EventEnvelope(
+        event_type="tool_result",
+        correlation_id=correlation_id,
+        actor=actor,
+        payload={"tool_name": tool_name, "output": output, "status": status},
+    )
+
+
+def create_error_event(error_message: str, error_class: str = "SYSTEM", correlation_id: str = "", actor: str = "system") -> EventEnvelope:
+    return EventEnvelope(
+        event_type="error",
+        correlation_id=correlation_id,
+        actor=actor,
+        payload={"error_message": error_message, "error_class": error_class},
+    )
+
+
+def create_state_change_event(from_state: str, to_state: str, correlation_id: str = "", actor: str = "system") -> EventEnvelope:
+    return EventEnvelope(
+        event_type="state_change",
+        correlation_id=correlation_id,
+        actor=actor,
+        payload={"from_state": from_state, "to_state": to_state},
+    )
+
+
+# ---------------------------------------------------------------------------
+# AsyncEventBus — Asyncio Pub/Sub
+# ---------------------------------------------------------------------------
+
+class AsyncEventBus:
+    """Asyncio-native pub/sub event bus with queue listeners."""
+
+    def __init__(self) -> None:
+        import asyncio
+        self._async_handlers: dict[str, list[Callable[[EventEnvelope], Any]]] = defaultdict(list)
+        self._queues: list[asyncio.Queue[EventEnvelope]] = []
+
+    def subscribe(self, event_type: str, handler: Callable[[EventEnvelope], Any]) -> None:
+        self._async_handlers[event_type].append(handler)
+
+    def create_listener_queue(self) -> Any:
+        import asyncio
+        q: asyncio.Queue[EventEnvelope] = asyncio.Queue()
+        self._queues.append(q)
+        return q
+
+    def remove_listener_queue(self, q: Any) -> None:
+        if q in self._queues:
+            self._queues.remove(q)
+
+    async def publish(self, event: EventEnvelope) -> None:
+        import asyncio
+        for q in list(self._queues):
+            try:
+                q.put_nowait(event)
+            except Exception:
+                pass
+
+        specific = list(self._async_handlers.get(event.event_type, []))
+        wildcard = list(self._async_handlers.get("*", []))
+        for handler in specific + wildcard:
+            try:
+                res = handler(event)
+                if asyncio.iscoroutine(res):
+                    await res
+            except Exception as e:
+                logger.error("Async handler error for %s: %s", event.event_type, e)
