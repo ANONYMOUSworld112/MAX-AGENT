@@ -61,13 +61,12 @@ Whether you're automating repetitive desktop workflows, delegating software deve
 ```powershell
 git clone https://github.com/ANONYMOUSworld112/MAX-AGENT.git
 cd MAX-AGENT
-python setup.py
 ```
 
 ### 2 · Setup MAX
-'''
+```
 python setup.py
-'''
+```
 
 ### 3 · Launch MAX
 
