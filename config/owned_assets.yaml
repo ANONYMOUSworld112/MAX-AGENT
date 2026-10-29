@@ -1,0 +1,6 @@
+{
+  "owned_assets": [],
+  "allowed_ports": [22, 53, 80, 443, 445, 3389, 8000, 8080],
+  "connect_timeout_seconds": 0.35,
+  "max_targets_per_scan": 256
+}

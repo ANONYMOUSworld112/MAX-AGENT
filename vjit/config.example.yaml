@@ -1,0 +1,6 @@
+# Public, non-sensitive VJIT integration defaults belong here.
+# Keep institution-specific secrets and private data outside the repository.
+integration:
+  enabled: false
+  base_url: ""
+  timeout_seconds: 10

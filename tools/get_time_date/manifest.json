@@ -1,0 +1,11 @@
+{
+  "name": "get_time_date",
+  "description": "Get current system time, date, day of week, and timezone.",
+  "permission_tier": "T0",
+  "timeout_seconds": 5.0,
+  "parameters": {
+    "type": "object",
+    "properties": {},
+    "required": []
+  }
+}

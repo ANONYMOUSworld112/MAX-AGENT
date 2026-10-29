@@ -1,0 +1,16 @@
+{
+  "name": "delete_note",
+  "description": "Delete a specified note file from the notes directory. Classified as Tier 2 Sensitive.",
+  "permission_tier": "T2",
+  "timeout_seconds": 10.0,
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "note_name": {
+        "type": "string",
+        "description": "Name of the note file to delete"
+      }
+    },
+    "required": ["note_name"]
+  }
+}

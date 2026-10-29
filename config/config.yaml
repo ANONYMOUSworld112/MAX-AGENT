@@ -1,0 +1,55 @@
+# FRIDAY Master Configuration File v2
+assistant:
+  name: "FRIDAY"
+  title: ""
+  tone: "tactical"
+  spoken_sentence_limit: 3
+
+llm:
+  primary_provider: "gemini"
+  primary_model: "gemini-3.8-flash"
+  fallback_provider: "anthropic"
+  fallback_model: "claude-sonnet-5-5"
+  fast_voice_model: "claude-haiku-5-5"
+  local_fallback_url: "http://localhost:11434"
+  local_fallback_model: "qwen2.5:7b"
+  monthly_budget_usd: 25.00
+  timeout_seconds: 30.0
+  max_retries: 3
+  backoff_factor: 1.5
+
+pricing_rates_per_million:
+  gemini-3.8-flash:
+    input: 0.10
+    output: 0.40
+  gemini-2.0-flash:
+    input: 0.10
+    output: 0.40
+  claude-sonnet-5-5:
+    input: 3.00
+    output: 15.00
+  claude-haiku-5-5:
+    input: 0.80
+    output: 4.00
+
+hardware:
+  target: "rtx3050"
+  max_gpu_models_mb: 3000
+  whisper_device: "cuda"
+  whisper_compute: "int8"
+  yolo_device: "cuda"
+  yolo_max_fps: 10
+  low_power_profile: false
+
+tools:
+  directory: "tools"
+  default_timeout_seconds: 15.0
+  hot_reload: true
+  auto_confirm_tier1: true
+  dry_run: false
+
+safety:
+  kill_switch_hotkey: "ctrl+alt+shift+k"
+  tamper_evident_audit: true
+  taint_tracking_enabled: true
+  prompt_injection_defense: true

@@ -1,0 +1,25 @@
+{
+  "name": "write_note",
+  "description": "Write or append text content to a note file in the user's workspace or notes directory.",
+  "permission_tier": "T1",
+  "timeout_seconds": 10.0,
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "note_name": {
+        "type": "string",
+        "description": "Name or title of the note (e.g. summary.txt)"
+      },
+      "content": {
+        "type": "string",
+        "description": "Text content to write into the note"
+      },
+      "append": {
+        "type": "boolean",
+        "description": "If true, appends content rather than overwriting",
+        "default": false
+      }
+    },
+    "required": ["note_name", "content"]
+  }
+}
