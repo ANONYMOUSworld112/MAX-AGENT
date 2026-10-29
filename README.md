@@ -286,6 +286,6 @@ See the component guides in the relevant directories for more detail.
 
 <div align="center">
 
-Made with ⚡ by **CyberBlack** &nbsp;·&nbsp; Powered by **Google Gemini Live**
+Made by **CyberBlack** &nbsp;·&nbsp; Powered by **CyberBlack**
 
 </div>
