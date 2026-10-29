@@ -132,6 +132,8 @@ def get_base_dir():
 BASE_DIR        = get_base_dir()
 API_CONFIG_PATH = BASE_DIR / "config" / "api_keys.json"
 PROMPT_PATH     = BASE_DIR / "core" / "prompt.txt"
+VJIT_SKILL_PATH = BASE_DIR / "skills" / "vjit" / "SKILL.md"
+VJIT_KEYS_PATH  = BASE_DIR / "skills" / "vjit" / "KEYSTROKES.md"
 LIVE_MODEL          = "models/gemini-3.1-flash-live-preview"
 CHANNELS            = 1
 SEND_SAMPLE_RATE    = 16000 
@@ -161,19 +163,46 @@ def _pcm_level(samples) -> float:
 
 
 def _get_api_key() -> str:
-    with open(API_CONFIG_PATH, "r", encoding="utf-8") as f:
-        return json.load(f)["gemini_api_key"]
+    try:
+        config = json.loads(API_CONFIG_PATH.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise RuntimeError(
+            "Gemini API configuration is missing or invalid. Please enter your key in MAX setup."
+        ) from exc
+
+    api_key = config.get("gemini_api_key") if isinstance(config, dict) else None
+    if not isinstance(api_key, str) or not api_key.strip():
+        raise RuntimeError(
+            "Gemini API key is missing from config/api_keys.json. Please re-enter it in MAX setup."
+        )
+    return api_key.strip()
 
 
 def _load_system_prompt() -> str:
     try:
-        return PROMPT_PATH.read_text(encoding="utf-8")
+        prompt = PROMPT_PATH.read_text(encoding="utf-8")
     except Exception:
-        return (
+        prompt = (
             "You are MAX, Tony Stark's AI assistant. "
             "Be concise, direct, and always use the provided tools to complete tasks. "
             "Never simulate or guess results — always call the appropriate tool."
         )
+
+    # VJIT is a prompt-defined skill that uses the existing computer_control
+    # tool. Load its instructions here because the generic SkillLoader is not
+    # part of main.py's live session path.
+    vjit_sections = []
+    for label, path in (("VJIT skill", VJIT_SKILL_PATH), ("VJIT keystroke guide", VJIT_KEYS_PATH)):
+        try:
+            content = path.read_text(encoding="utf-8").strip()
+        except OSError:
+            continue
+        if content:
+            vjit_sections.append(f"## {label}\n\n{content}")
+
+    if vjit_sections:
+        prompt += "\n\n# Additional skills\n\n" + "\n\n".join(vjit_sections)
+    return prompt
 
 _CTRL_RE = re.compile(r"<ctrl\d+>", re.IGNORECASE)
 
@@ -1966,8 +1995,13 @@ class MaxLive:
                     continue
 
                 # Invalid API key — stop hammering the API, prompt re-configuration
-                if "API key not valid" in err_str or "API_KEY_INVALID" in err_str:
-                    self.ui.write_log("ERR: API key invalid — please re-enter your key.")
+                if (
+                    "API key not valid" in err_str
+                    or "API_KEY_INVALID" in err_str
+                    or "Gemini API key is missing" in err_str
+                    or "Gemini API configuration is missing or invalid" in err_str
+                ):
+                    self.ui.write_log("ERR: Gemini API key is missing or invalid — please re-enter your key.")
                     self.ui.set_state("SLEEPING")
                     self.ui.prompt_reconfig()
                     while not self.ui._win._ready:
